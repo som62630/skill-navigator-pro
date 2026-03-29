@@ -82,16 +82,16 @@ const Landing = () => {
             >
               <div className="relative">
                 <img
-                  src={crystalHero}
-                  alt="SkillSync AI Crystal"
+                  src={dashboardHero}
+                  alt="SkillSync AI Career Dashboard"
                   width={1024}
                   height={1024}
                   className="w-[400px] lg:w-[520px] animate-float drop-shadow-2xl"
                   style={{ filter: "drop-shadow(0 0 60px hsl(239 84% 67% / 0.3))" }}
                 />
-                {/* Floating crystal shard bottom-left */}
+                {/* Floating dashboard shard bottom-left */}
                 <motion.img
-                  src={crystalSmall}
+                  src={dashboardShard}
                   alt=""
                   loading="lazy"
                   width={512}
