@@ -7,8 +7,8 @@ import {
 import Navbar from "@/components/Navbar";
 import ParticleField from "@/components/ParticleField";
 import GlowCard from "@/components/GlowCard";
-import crystalHero from "@/assets/crystal-hero.png";
-import crystalSmall from "@/assets/crystal-small.png";
+import dashboardHero from "@/assets/dashboard-hero.png";
+import dashboardShard from "@/assets/dashboard-shard.png";
 
 const fadeUp = {
   initial: { opacity: 0, y: 40 },
