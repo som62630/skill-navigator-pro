@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Bot, User, Sparkles } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { getAIResponse } from "@/lib/aiCoach";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -16,23 +18,6 @@ const suggestions = [
   "Review my portfolio strategy",
 ];
 
-const mockResponses: Record<string, string> = {
-  default: "That's a great question! Based on your profile, I'd recommend focusing on building practical projects that demonstrate your skills. Would you like me to create a specific plan for that?",
-  skills: "For a frontend developer role, the most in-demand skills in 2026 are:\n\n1. **TypeScript** — Essential for modern codebases\n2. **React/Next.js** — Dominant framework ecosystem\n3. **Testing** — Jest, RTL, Cypress\n4. **System Design** — Component architecture, state management\n5. **Performance** — Core Web Vitals, code splitting\n\nShall I create a learning roadmap for any of these?",
-  interview: "Great choice! Here's how to prepare for system design interviews:\n\n**Week 1-2:** Study fundamentals — scalability, load balancing, caching, databases.\n\n**Week 3-4:** Practice common patterns — URL shortener, chat system, news feed.\n\n**Week 5-6:** Mock interviews and review.\n\nWant me to deep-dive into any specific topic?",
-  plan: "Here's your **30-Day React Mastery Plan:**\n\n📅 **Days 1-7:** Core concepts refresh — hooks, context, patterns\n📅 **Days 8-14:** Advanced patterns — custom hooks, compound components, render props\n📅 **Days 15-21:** Next.js deep dive — App Router, SSR, RSC\n📅 **Days 22-28:** Build a capstone project\n📅 **Days 29-30:** Polish and deploy\n\nShall I break down any week further?",
-  portfolio: "A strong portfolio strategy for 2026:\n\n1. **3-4 quality projects** > 10 basic ones\n2. **Live demos** with clean README\n3. **Case studies** explaining your decisions\n4. **Open source contributions** show collaboration\n\nFocus on projects that solve real problems!",
-};
-
-const getResponse = (msg: string): string => {
-  const lower = msg.toLowerCase();
-  if (lower.includes("skill")) return mockResponses.skills;
-  if (lower.includes("interview") || lower.includes("system design")) return mockResponses.interview;
-  if (lower.includes("plan") || lower.includes("30")) return mockResponses.plan;
-  if (lower.includes("portfolio")) return mockResponses.portfolio;
-  return mockResponses.default;
-};
-
 const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -45,16 +30,22 @@ const Chat = () => {
 
   const send = async (text: string) => {
     if (!text.trim()) return;
+
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: text.trim() };
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setTyping(true);
 
-    await new Promise((r) => setTimeout(r, 1200));
-
-    const response = getResponse(text);
-    setMessages((m) => [...m, { id: (Date.now() + 1).toString(), role: "assistant", content: response }]);
-    setTyping(false);
+    try {
+      const responseText = await getAIResponse(text.trim(), messages);
+      setMessages((m) => [...m, { id: (Date.now() + 1).toString(), role: "assistant", content: responseText }]);
+    } catch (error: any) {
+      console.error("AI Coach Error:", error);
+      toast.error("Failed to connect to AI Coach. Please try again.");
+      setMessages((m) => [...m, { id: (Date.now() + 1).toString(), role: "assistant", content: "I'm sorry, I'm having trouble connecting to my servers right now." }]);
+    } finally {
+      setTyping(false);
+    }
   };
 
   return (

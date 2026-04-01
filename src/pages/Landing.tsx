@@ -36,7 +36,7 @@ const Landing = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div {...stagger} initial="initial" animate="animate" className="space-y-8">
               <motion.div {...fadeUp}>
-                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs font-semibold text-primary">
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs font-semibold text-white">
                   <Sparkles size={14} /> AI-Powered Career Intelligence
                 </span>
               </motion.div>
@@ -83,7 +83,7 @@ const Landing = () => {
               <div className="relative">
                 <img
                   src={dashboardHero}
-                  alt="SkillSync AI Career Dashboard"
+                  alt="CareerCompass Career Dashboard"
                   width={1024}
                   height={1024}
                   className="w-[400px] lg:w-[520px] animate-float drop-shadow-2xl"
@@ -159,7 +159,7 @@ const Landing = () => {
             transition={{ delay: 0.1 }}
             className="text-muted-foreground text-lg leading-relaxed max-w-2xl mx-auto"
           >
-            SkillSync AI reads your resume, understands your skills, compares them with real job requirements, and builds a personalized learning roadmap — so you know exactly what to learn and when.
+            CareerCompass reads your resume, understands your skills, compares them with real job requirements, and builds a personalized learning roadmap — so you know exactly what to learn and when.
           </motion.p>
         </div>
       </section>
@@ -234,9 +234,9 @@ const Landing = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { name: "Priya Sharma", role: "SDE at Google", text: "SkillSync showed me exactly what I was missing. Within 3 months, I cracked my dream role." },
+              { name: "Priya Sharma", role: "SDE at Google", text: "CareerCompass showed me exactly what I was missing. Within 3 months, I cracked my dream role." },
               { name: "Rahul Mehta", role: "Data Analyst at Amazon", text: "The roadmap feature is incredible. It felt like having a personal career mentor." },
-              { name: "Ananya Singh", role: "Frontend Dev at Razorpay", text: "I was applying blindly before. SkillSync changed my entire approach to job hunting." },
+              { name: "Ananya Singh", role: "Frontend Dev at Razorpay", text: "I was applying blindly before. CareerCompass changed my entire approach to job hunting." },
             ].map((t, i) => (
               <GlowCard key={t.name} delay={i * 0.1}>
                 <div className="flex gap-1 mb-4">
@@ -274,7 +274,7 @@ const Landing = () => {
             transition={{ delay: 0.1 }}
             className="text-muted-foreground text-lg"
           >
-            Join thousands of professionals who transformed their careers with SkillSync AI.
+            Join thousands of professionals who transformed their careers with CareerCompass.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -295,8 +295,8 @@ const Landing = () => {
       {/* FOOTER */}
       <footer className="py-12 border-t border-border/50">
         <div className="container flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <span className="font-display font-semibold text-foreground">SkillSync AI</span>
-          <span>© 2026 SkillSync AI. All rights reserved.</span>
+          <span className="font-display font-semibold text-foreground">CareerCompass</span>
+          <span>© 2026 CareerCompass. All rights reserved.</span>
         </div>
       </footer>
     </div>
