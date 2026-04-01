@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Bot, User, Sparkles } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import { getAIResponse } from "@/lib/aiCoach";
+import { getGeminiChatSession } from "@/lib/gemini";
 import { toast } from "sonner";
 
 interface Message {
@@ -24,6 +24,19 @@ const Chat = () => {
   const [typing, setTyping] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
+  // Keep track of the chat session to maintain history context within Gemini
+  const chatSessionRef = useRef<any>(null);
+
+  useEffect(() => {
+    // Initialize session once on mount
+    try {
+      chatSessionRef.current = getGeminiChatSession();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || "Failed to initialize Gemini API");
+    }
+  }, []);
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
@@ -31,18 +44,24 @@ const Chat = () => {
   const send = async (text: string) => {
     if (!text.trim()) return;
 
+    if (!chatSessionRef.current) {
+      toast.error("AI Coach is unavailable. Please check your API configuration.");
+      return;
+    }
+
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: text.trim() };
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setTyping(true);
 
     try {
-      const responseText = await getAIResponse(text.trim(), messages);
+      const result = await chatSessionRef.current.sendMessage(text);
+      const responseText = result.response.text();
       setMessages((m) => [...m, { id: (Date.now() + 1).toString(), role: "assistant", content: responseText }]);
     } catch (error: any) {
-      console.error("AI Coach Error:", error);
+      console.error("Gemini API Error:", error);
       toast.error("Failed to connect to AI Coach. Please try again.");
-      setMessages((m) => [...m, { id: (Date.now() + 1).toString(), role: "assistant", content: "I'm sorry, I'm having trouble connecting to my servers right now." }]);
+      setMessages((m) => [...m, { id: (Date.now() + 1).toString(), role: "assistant", content: "I'm sorry, I'm having trouble connecting to my servers right now. Please verify your API key or your connection." }]);
     } finally {
       setTyping(false);
     }
