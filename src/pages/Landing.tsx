@@ -68,7 +68,6 @@ const Landing = () => {
               </motion.div>
               <motion.div {...fadeUp} className="flex items-center gap-6 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5"><CheckCircle2 size={16} className="text-secondary" /> Free to use</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 size={16} className="text-secondary" /> No signup needed</span>
                 <span className="flex items-center gap-1.5"><CheckCircle2 size={16} className="text-secondary" /> Instant results</span>
               </motion.div>
             </motion.div>
