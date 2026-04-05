@@ -43,16 +43,16 @@ app.use('/analysis', analysisRoutes);
 // Health check
 app.get('/', (req, res) => res.json({ status: 'Skill Navigator Backend is running' }));
 
-// Database connection
-const PORT = process.env.PORT || 5001;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/skill-navigator";
-
-mongoose
-  .connect(MONGO_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  })
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
-  });
+// Start Server
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  
+  // Database connection
+  mongoose
+    .connect(MONGO_URI)
+    .then(() => console.log('✅ Connected to MongoDB'))
+    .catch((err) => {
+      console.error('❌ MongoDB connection error:', err.message);
+      console.log('TIP: Make sure your MongoDB service is running or check your MONGO_URI.');
+    });
+});
