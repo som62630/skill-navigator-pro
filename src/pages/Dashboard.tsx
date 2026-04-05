@@ -66,12 +66,14 @@ const ScoreRing = ({ score }: { score: number }) => {
 
 const Dashboard = () => {
   const location = useLocation();
-  const state = location.state as { name?: string; role?: string; level?: string } | null;
-  const data = {
-    ...mockData,
-    name: state?.name || mockData.name,
-    role: state?.role || mockData.role,
-  };
+  const state = location.state as { analysis?: any } | null;
+  
+  // Use real data if available, else fallback to mock for demo purposes
+  const data = state?.analysis ? {
+    ...state.analysis,
+    name: state.analysis.name || "User",
+    role: state.analysis.role || "Developer"
+  } : mockData;
 
   return (
     <div className="min-h-screen bg-background">

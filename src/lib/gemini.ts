@@ -43,27 +43,32 @@ export const getGeminiChatSession = (history: ChatMessage[] = []) => {
 };
 
 /**
- * Sends a message either via the local /api/chat route (Vercel)
+ * Sends a message either via the backend API
  * or falls back to direct client-side Google AI call if key is present.
  */
-export async function sendChatMessage(message: string, history: ChatMessage[]): Promise<string> {
-  // 1. Try Vercel Serverless Function first (more robust and secure)
-  try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, history }),
-    });
+export async function sendChatMessage(message: string, history: ChatMessage[], token?: string): Promise<string> {
+  // 1. Try Backend API first
+  if (token) {
+    try {
+      const response = await fetch("http://localhost:5001/analysis/chat", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ message, history }),
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data.response) return data.response;
+      if (response.ok) {
+        const data = await response.json();
+        if (data.response) return data.response;
+      }
+    } catch (error) {
+      console.debug("Backend API not reachable, falling back to client call", error);
     }
-  } catch (error) {
-    console.debug("Backend API not reachable, falling back to client call", error);
   }
 
-  // 2. Try direct client-side call if backend failed and we have an API key locally
+  // 2. Try direct client-side call if backend failed or no token was provided
   if (genAI) {
     try {
       const chat = getGeminiChatSession(history);
@@ -77,5 +82,5 @@ export async function sendChatMessage(message: string, history: ChatMessage[]): 
     }
   }
 
-  throw new Error("No Gemini API connection available.");
+  throw new Error("No AI connection available. Please login or check your configuration.");
 }

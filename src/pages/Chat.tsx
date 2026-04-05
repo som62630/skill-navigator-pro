@@ -4,6 +4,9 @@ import { Send, Bot, User, Sparkles } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { sendChatMessage } from "@/lib/gemini";
 import { getAIResponse as getLocalResponse } from "@/lib/aiCoach";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface Message {
   id: string;
@@ -19,6 +22,8 @@ const suggestions = [
 ];
 
 const Chat = () => {
+  const navigate = useNavigate();
+  const { token, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -31,16 +36,20 @@ const Chat = () => {
   const send = async (text: string) => {
     if (!text.trim()) return;
 
-    // Add user message to UI immediately
+    if (!isAuthenticated) {
+      toast.error("Please login to talk to the AI Coach.");
+      navigate("/login");
+      return;
+    }
+
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: text.trim() };
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setTyping(true);
 
     try {
-      // 1. Try to get AI response via our unified API (Serverless -> Client -> Fallback)
       const currentHistory = messages.map(m => ({ role: m.role, content: m.content }));
-      const responseText = await sendChatMessage(text, currentHistory);
+      const responseText = await sendChatMessage(text, currentHistory, token || undefined);
       
       setMessages((m) => [...m, { id: (Date.now() + 1).toString(), role: "assistant", content: responseText }]);
     } catch (error: any) {

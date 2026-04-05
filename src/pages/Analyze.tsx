@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { Upload, FileText, Loader2, ArrowRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import ParticleField from "@/components/ParticleField";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 const roles = [
   "Frontend Developer", "Backend Developer", "Full Stack Developer",
@@ -16,6 +18,7 @@ const levels = ["Beginner", "Intermediate", "Advanced"];
 
 const Analyze = () => {
   const navigate = useNavigate();
+  const { token, isAuthenticated } = useAuth();
   const [form, setForm] = useState({ name: "", role: "", level: "", file: null as File | null });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -34,9 +37,39 @@ const Analyze = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    
+    if (!isAuthenticated) {
+      toast.error("Please login to analyze your resume.");
+      navigate("/login");
+      return;
+    }
+
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    navigate("/dashboard", { state: { name: form.name, role: form.role, level: form.level } });
+    try {
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("role", form.role);
+      formData.append("level", form.level);
+      if (form.file) formData.append("file", form.file);
+
+      const response = await fetch("http://localhost:5001/analysis/process", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Analysis failed");
+
+      toast.success("Analysis complete!");
+      navigate("/dashboard", { state: { analysis: data } });
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred during analysis.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
