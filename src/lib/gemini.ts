@@ -50,7 +50,8 @@ export async function sendChatMessage(message: string, history: ChatMessage[], t
   // 1. Try Backend API first
   if (token) {
     try {
-      const response = await fetch("http://localhost:5001/analysis/chat", {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+      const response = await fetch(`${API_URL}/analysis/chat`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",

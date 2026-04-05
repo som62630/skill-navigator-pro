@@ -1,10 +1,13 @@
-const { OpenAI } = require('openai');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 exports.analyzeResume = async (resumeText, role, level) => {
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-pro",
+    generationConfig: { responseMimeType: "application/json" },
+  });
+
   const prompt = `
     Analyze the following resume for a ${level}-level ${role} position.
     
@@ -16,9 +19,9 @@ exports.analyzeResume = async (resumeText, role, level) => {
       "score": (number 0-100),
       "strengths": [string],
       "weaknesses": [string],
-      "missing": [string], (skills the user totally lacks for this role)
-      "suggested": [string], (learning topics)
-      "roadmap": [ (exactly 4 weeks)
+      "missing": [string],
+      "suggested": [string],
+      "roadmap": [ (exactly 4 items)
         { "week": "Week 1-2", "title": "string", "tasks": [string] },
         { "week": "Week 3-4", "title": "string", "tasks": [string] },
         { "week": "Week 5-6", "title": "string", "tasks": [string] },
@@ -33,35 +36,33 @@ exports.analyzeResume = async (resumeText, role, level) => {
   `;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [{ role: "system", content: "You are an expert career coach and technical recruiter." }, { role: "user", content: prompt }],
-      response_format: { type: "json_object" },
-    });
-
-    return JSON.parse(response.choices[0].message.content);
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    return JSON.parse(response.text());
   } catch (error) {
-    console.error("OpenAI Analysis Error:", error);
-    throw new Error("Failed to analyze resume with AI.");
+    console.error("Gemini Analysis Error:", error);
+    throw new Error("Failed to analyze resume with Gemini AI.");
   }
 };
 
 exports.chat = async (message, history) => {
-  const messages = [
-    { role: "system", content: "You are an expert AI Career Coach for software developers. Provide actionable, professional advice. Keep answers concise and markdown-formatted." },
-    ...history.map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content })),
-    { role: "user", content: message },
-  ];
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-pro",
+    systemInstruction: "You are an expert AI Career Coach for software developers. Provide actionable, professional advice. Keep answers concise and markdown-formatted.",
+  });
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: messages,
+    const chat = model.startChat({
+      history: history.map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      })),
     });
 
-    return response.choices[0].message.content;
+    const result = await chat.sendMessage(message);
+    return result.response.text();
   } catch (error) {
-    console.error("OpenAI Chat Error:", error);
-    throw new Error("Failed to get chat response from AI.");
+    console.error("Gemini Chat Error:", error);
+    throw new Error("Failed to get response from Gemini AI.");
   }
 };
