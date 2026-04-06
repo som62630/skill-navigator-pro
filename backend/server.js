@@ -41,7 +41,17 @@ app.use('/auth', authRoutes);
 app.use('/analysis', analysisRoutes);
 
 // Health check
-app.get('/', (req, res) => res.json({ status: 'Skill Navigator Backend is running' }));
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'Skill Navigator Backend is running',
+    database: mongoose.connection.readyState === 1 ? 'Healthy ✅' : 'Disconnected ❌',
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Database & Port Config
+const PORT = process.env.PORT || 5001;
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/skill-navigator";
 
 // Start Server
 app.listen(PORT, () => {
