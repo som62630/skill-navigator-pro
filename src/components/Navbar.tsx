@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const navLinks = [
   { label: "Home", to: "/" },
-  { label: "Analyze", to: "/analyze" },
+  { label: "Roadmap", to: "/roadmap" },
   { label: "Dashboard", to: "/dashboard" },
   { label: "AI Coach", to: "/chat" },
 ];
@@ -19,9 +19,12 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-strong">
       <div className="container flex items-center justify-between h-16">
-        <Link to="/" className="flex items-center gap-3">
-          <span className="font-display font-bold text-xl tracking-tight">
-            <span className="text-foreground">Career</span><span className="text-primary">Compass</span>
+        <Link to="/" className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center glow-sm">
+            <Sparkles size={16} className="text-primary-foreground" />
+          </div>
+          <span className="font-display font-bold text-lg tracking-tight">
+            <span className="text-foreground">Skill</span><span className="text-primary">Navigator</span>
           </span>
         </Link>
 

@@ -12,7 +12,7 @@
     --card-foreground: 214 32% 91%;
     --popover: 217 33% 12%;
     --popover-foreground: 214 32% 91%;
-    --primary: 239 84% 67%;
+    --primary: 252 87% 64%;
     --primary-foreground: 0 0% 100%;
     --secondary: 142 71% 45%;
     --secondary-foreground: 0 0% 100%;
@@ -24,18 +24,18 @@
     --destructive-foreground: 0 0% 100%;
     --border: 217 33% 18%;
     --input: 217 33% 18%;
-    --ring: 239 84% 67%;
+    --ring: 252 87% 64%;
     --radius: 1rem;
     --sidebar-background: 222 47% 6%;
     --sidebar-foreground: 214 32% 91%;
-    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary: 252 87% 64%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 217 33% 17%;
     --sidebar-accent-foreground: 214 32% 91%;
     --sidebar-border: 217 33% 18%;
-    --sidebar-ring: 239 84% 67%;
+    --sidebar-ring: 252 87% 64%;
 
-    --glow-primary: 239 84% 67%;
+    --glow-primary: 252 87% 64%;
     --glow-secondary: 217 91% 60%;
     --surface: 217 33% 12%;
     --surface-hover: 217 33% 16%;
@@ -68,10 +68,13 @@
     box-shadow: 0 0 80px -20px hsl(var(--glow-primary) / 0.5);
   }
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-[hsl(var(--glow-secondary))] to-primary;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[hsl(252,87%,64%)] via-[hsl(217,91%,60%)] to-[hsl(252,87%,64%)];
+  }
+  .text-gradient-warm {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[hsl(252,87%,64%)] via-[hsl(280,70%,60%)] to-[hsl(330,80%,60%)];
   }
   .gradient-primary {
-    @apply bg-gradient-to-r from-primary to-[hsl(var(--glow-secondary))];
+    @apply bg-gradient-to-r from-[hsl(252,87%,64%)] to-[hsl(217,91%,60%)];
   }
   .gradient-border {
     position: relative;
@@ -102,7 +105,7 @@
   border-radius: 3px;
 }
 
-/* Floating particles animation */
+/* ─── Animations ───────────────────────────────────────────── */
 @keyframes float {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   33% { transform: translateY(-20px) rotate(5deg); }
@@ -116,6 +119,33 @@
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.3; }
+}
+@keyframes expand-progress {
+  from { width: 0%; }
+}
+@keyframes typing-cursor {
+  0%, 100% { border-color: hsl(var(--primary)); }
+  50% { border-color: transparent; }
+}
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .animate-float { animation: float 6s ease-in-out infinite; }
 .animate-float-slow { animation: float 8s ease-in-out infinite; }
 .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
@@ -123,11 +153,34 @@
   background-size: 200% 100%;
   animation: shimmer 3s linear infinite;
 }
+.animate-fade-in-up { animation: fade-in-up 0.6s ease-out forwards; }
+.animate-slide-in-right { animation: slide-in-right 0.7s ease-out forwards; }
+.animate-spin-slow { animation: spin-slow 3s linear infinite; }
+.animate-count-up { animation: count-up 0.5s ease-out forwards; }
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.5) 50%, hsl(var(--muted)) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 0.75rem;
+}
 
 /* Grid pattern overlay */
 .grid-pattern {
   background-image: 
-    linear-gradient(hsl(var(--border) / 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--border) / 0.1) 1px, transparent 1px);
+    linear-gradient(hsl(var(--border) / 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.08) 1px, transparent 1px);
   background-size: 60px 60px;
+}
+
+/* Progress bar animation */
+.progress-bar-animated {
+  animation: expand-progress 1.2s ease-out forwards;
+}
+
+/* Typing cursor */
+.typing-cursor {
+  border-right: 2px solid hsl(var(--primary));
+  animation: typing-cursor 1s step-end infinite;
 }

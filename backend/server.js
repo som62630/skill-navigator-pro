@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/authRoutes');
 const analysisRoutes = require('./routes/analysisRoutes');
+const roadmapRoutes = require('./routes/roadmapRoutes');
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use(limiter);
 // Routes
 app.use('/auth', authRoutes);
 app.use('/analysis', analysisRoutes);
+app.use('/roadmap', roadmapRoutes);
 
 // Health check
 app.get('/', (req, res) => {

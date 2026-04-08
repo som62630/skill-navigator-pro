@@ -1,14 +1,16 @@
-import { useLocation } from "react-router-dom";
+import { useState } from "react";
+import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   TrendingUp, AlertTriangle, CheckCircle2, BookOpen,
-  FolderGit2, Calendar, ArrowRight
+  FolderGit2, Calendar, ArrowRight, BarChart3, Target,
+  Clock, Zap, ChevronRight, Sparkles, Plus, Route
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import GlowCard from "@/components/GlowCard";
 
-// Mock data
+/* ─── Mock Data ──────────────────────────────────────────────────────────── */
+
 const mockData = {
   name: "Demo User",
   role: "Frontend Developer",
@@ -29,6 +31,13 @@ const mockData = {
     { title: "Portfolio Website", desc: "Responsive portfolio with animations and CMS.", difficulty: "Beginner" },
   ],
 };
+
+const mockSavedRoadmaps = [
+  { id: 1, goal: "Full-Stack Developer", skills: 16, weeks: 12, progress: 35, createdAt: "2026-03-15" },
+  { id: 2, goal: "Data Scientist", skills: 13, weeks: 16, progress: 12, createdAt: "2026-04-01" },
+];
+
+/* ─── Score Ring ──────────────────────────────────────────────────────────── */
 
 const ScoreRing = ({ score }: { score: number }) => {
   const circumference = 2 * Math.PI * 54;
@@ -64,16 +73,27 @@ const ScoreRing = ({ score }: { score: number }) => {
   );
 };
 
+/* ─── Dashboard ──────────────────────────────────────────────────────────── */
+
 const Dashboard = () => {
   const location = useLocation();
   const state = location.state as { analysis?: any } | null;
-  
-  // Use real data if available, else fallback to mock for demo purposes
+  const [checkedTasks, setCheckedTasks] = useState<Set<string>>(new Set());
+
   const data = state?.analysis ? {
     ...state.analysis,
     name: state.analysis.name || "User",
     role: state.analysis.role || "Developer"
   } : mockData;
+
+  const toggleTask = (task: string) => {
+    setCheckedTasks(prev => {
+      const next = new Set(prev);
+      if (next.has(task)) next.delete(task);
+      else next.add(task);
+      return next;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,10 +108,54 @@ const Dashboard = () => {
               </h1>
               <p className="text-muted-foreground text-sm mt-1">Target: {data.role}</p>
             </div>
-            <Link to="/chat" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold glow-sm">
-              Talk to AI Coach <ArrowRight size={16} />
-            </Link>
+            <div className="flex gap-3">
+              <Link to="/roadmap" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold glow-sm">
+                <Plus size={16} /> New Roadmap
+              </Link>
+              <Link to="/chat" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl glass text-foreground text-sm font-semibold hover:bg-card/70 transition-colors">
+                Talk to AI Coach <ArrowRight size={16} />
+              </Link>
+            </div>
           </motion.div>
+
+          {/* Saved Roadmaps */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Route size={20} className="text-primary" />
+              <h2 className="font-display text-xl font-bold">My Roadmaps</h2>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {mockSavedRoadmaps.map((rm, i) => (
+                <GlowCard key={rm.id} delay={i * 0.08}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-display font-semibold text-sm">{rm.goal}</h3>
+                    <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">{rm.weeks}w</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+                    <span className="flex items-center gap-1"><Target size={12} /> {rm.skills} skills</span>
+                    <span className="flex items-center gap-1"><Clock size={12} /> {rm.createdAt}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted/50 overflow-hidden mb-2">
+                    <motion.div
+                      className="h-full rounded-full gradient-primary"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${rm.progress}%` }}
+                      transition={{ duration: 1, delay: 0.3 + i * 0.1 }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground text-right">{rm.progress}% complete</p>
+                </GlowCard>
+              ))}
+
+              {/* Add new roadmap card */}
+              <Link to="/roadmap" className="glass gradient-border rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-card/70 transition-colors min-h-[160px] group">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <Plus className="text-primary" size={24} />
+                </div>
+                <p className="text-sm text-muted-foreground font-medium">Generate New Roadmap</p>
+              </Link>
+            </div>
+          </div>
 
           {/* Score + Skills */}
           <div className="grid lg:grid-cols-3 gap-6">
@@ -107,7 +171,7 @@ const Dashboard = () => {
                 <h3 className="font-display font-semibold">Strengths</h3>
               </div>
               <div className="flex flex-wrap gap-2">
-                {data.strengths.map((s) => (
+                {data.strengths.map((s: string) => (
                   <span key={s} className="px-3 py-1 rounded-lg bg-secondary/10 text-secondary text-xs font-medium">{s}</span>
                 ))}
               </div>
@@ -119,7 +183,7 @@ const Dashboard = () => {
                 <h3 className="font-display font-semibold">Weaknesses</h3>
               </div>
               <div className="flex flex-wrap gap-2">
-                {data.weaknesses.map((s) => (
+                {data.weaknesses.map((s: string) => (
                   <span key={s} className="px-3 py-1 rounded-lg bg-accent/10 text-accent text-xs font-medium">{s}</span>
                 ))}
               </div>
@@ -134,7 +198,7 @@ const Dashboard = () => {
                 <h3 className="font-display font-semibold">Missing Skills</h3>
               </div>
               <ul className="space-y-2">
-                {data.missing.map((s) => (
+                {data.missing.map((s: string) => (
                   <li key={s} className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-destructive" /> {s}
                   </li>
@@ -148,7 +212,7 @@ const Dashboard = () => {
                 <h3 className="font-display font-semibold">Suggested Learning</h3>
               </div>
               <ul className="space-y-2">
-                {data.suggested.map((s) => (
+                {data.suggested.map((s: string) => (
                   <li key={s} className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary" /> {s}
                   </li>
@@ -157,23 +221,39 @@ const Dashboard = () => {
             </GlowCard>
           </div>
 
-          {/* Roadmap */}
+          {/* Roadmap with Progress Tracking */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Calendar size={20} className="text-primary" />
               <h2 className="font-display text-xl font-bold">Your Personalized Roadmap</h2>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {data.roadmap.map((r, i) => (
+              {data.roadmap.map((r: any, i: number) => (
                 <GlowCard key={r.week} delay={i * 0.08}>
                   <p className="text-xs font-semibold text-primary mb-1">{r.week}</p>
                   <h3 className="font-display font-semibold text-sm mb-3">{r.title}</h3>
-                  <ul className="space-y-1.5">
-                    {r.tasks.map((t) => (
-                      <li key={t} className="flex items-start gap-2 text-xs text-muted-foreground">
-                        <CheckCircle2 size={12} className="text-muted-foreground mt-0.5 shrink-0" /> {t}
-                      </li>
-                    ))}
+                  <ul className="space-y-2">
+                    {r.tasks.map((t: string) => {
+                      const isChecked = checkedTasks.has(t);
+                      return (
+                        <li
+                          key={t}
+                          className="flex items-start gap-2 text-xs cursor-pointer group"
+                          onClick={() => toggleTask(t)}
+                        >
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                            isChecked
+                              ? "bg-secondary border-secondary"
+                              : "border-muted-foreground/40 group-hover:border-primary/60"
+                          }`}>
+                            {isChecked && <CheckCircle2 size={10} className="text-white" />}
+                          </div>
+                          <span className={`transition-colors ${isChecked ? "line-through text-muted-foreground/50" : "text-muted-foreground"}`}>
+                            {t}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </GlowCard>
               ))}
@@ -187,7 +267,7 @@ const Dashboard = () => {
               <h2 className="font-display text-xl font-bold">Project Recommendations</h2>
             </div>
             <div className="grid sm:grid-cols-3 gap-4">
-              {data.projects.map((p, i) => (
+              {data.projects.map((p: any, i: number) => (
                 <GlowCard key={p.title} delay={i * 0.08}>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
                     p.difficulty === "Beginner" ? "bg-secondary/10 text-secondary"
