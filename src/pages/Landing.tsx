@@ -205,7 +205,7 @@ const Landing = () => {
             </motion.div>
 
             {/* Right: Animated Preview */}
-            <div className="hidden lg:flex justify-center lg:justify-end">
+            <div className="hidden lg:flex justify-center lg:-ml-12 xl:-ml-24">
               <RoadmapPreview />
             </div>
           </div>
