@@ -149,8 +149,8 @@ const Landing = () => {
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-primary/6 blur-[140px] pointer-events-none" />
 
         <div className="container relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <motion.div {...stagger} initial="initial" animate="animate" className="space-y-8">
+          <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 xl:gap-12 items-center">
+            <motion.div {...stagger} initial="initial" animate="animate" className="space-y-8 lg:col-span-7 xl:col-span-7">
               <motion.div {...fadeUp}>
                 <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs font-semibold text-white">
                   <Sparkles size={14} className="text-accent" /> AI-Powered Skill Intelligence
@@ -205,7 +205,7 @@ const Landing = () => {
             </motion.div>
 
             {/* Right: Animated Preview */}
-            <div className="hidden lg:flex justify-center lg:-ml-12 xl:-ml-24">
+            <div className="hidden lg:flex justify-start lg:col-span-5 xl:col-span-5">
               <RoadmapPreview />
             </div>
           </div>
