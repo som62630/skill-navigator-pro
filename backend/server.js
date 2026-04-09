@@ -45,7 +45,7 @@ app.use('/roadmap', roadmapRoutes);
 // Health check
 app.get('/', (req, res) => {
   res.json({ 
-    status: 'Skill Navigator Backend is running',
+    status: 'CareerCompass Backend is running',
     database: mongoose.connection.readyState === 1 ? 'Healthy ✅' : 'Disconnected ❌',
     environment: process.env.NODE_ENV || 'development'
   });

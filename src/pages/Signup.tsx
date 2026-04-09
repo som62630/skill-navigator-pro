@@ -46,7 +46,7 @@ const Signup = () => {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl gradient-primary mb-2 glow-sm">
               <UserPlus className="text-primary-foreground" size={28} />
             </div>
-            <h1 className="text-3xl font-display font-bold">Join <span className="text-gradient">Skill Navigator</span></h1>
+            <h1 className="text-3xl font-display font-bold">Join <span className="text-gradient">CareerCompass</span></h1>
             <p className="text-muted-foreground text-sm">Start your journey to your dream career today</p>
           </div>
 

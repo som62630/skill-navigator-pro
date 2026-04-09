@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: skill-navigator-backend
+    name: career-compass-backend
     env: node
     plan: free
     rootDir: backend

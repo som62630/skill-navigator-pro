@@ -153,7 +153,7 @@ const Landing = () => {
             <motion.div {...stagger} initial="initial" animate="animate" className="space-y-8 lg:col-span-7 xl:col-span-7">
               <motion.div {...fadeUp}>
                 <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs font-semibold text-white">
-                  <Sparkles size={14} className="text-accent" /> AI-Powered Skill Intelligence
+                  <Sparkles size={14} className="text-accent" /> AI-Powered Career Intelligence
                 </span>
               </motion.div>
 
@@ -276,7 +276,7 @@ const Landing = () => {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: BrainCircuit, title: "AI Skill Analysis", desc: "Advanced AI breaks down any career into its component skills with difficulty ratings.", color: "text-primary" },
+              { icon: BrainCircuit, title: "Career Analysis", desc: "Advanced AI breaks down any career into its component skills with difficulty ratings.", color: "text-primary" },
               { icon: Route, title: "Personalized Roadmaps", desc: "Get a week-by-week learning plan tailored to your specific career goal.", color: "text-secondary" },
               { icon: BarChart3, title: "Progress Tracking", desc: "Track your learning progress with visual dashboards and milestone markers.", color: "text-accent" },
               { icon: BookOpen, title: "Resource Curation", desc: "Curated free and paid resources for every skill — courses, books, tutorials.", color: "text-destructive" },
@@ -294,7 +294,7 @@ const Landing = () => {
       </section>
 
       {/* ═══ PRODUCT SHOWCASE ═══ */}
-      <section className="py-32 relative overflow-hidden">
+      <section className="pt-32 pb-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/3 to-transparent pointer-events-none" />
         {/* Ambient glow behind image */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] rounded-full bg-primary/8 blur-[120px] pointer-events-none" />
@@ -335,7 +335,7 @@ const Landing = () => {
                 >
                   <img
                     src="/images/dashboard-hero.png"
-                    alt="Skill Navigator Pro Dashboard — AI-powered readiness scoring, career roadmap, and skill analytics"
+                    alt="CareerCompass Dashboard — AI-powered readiness scoring, career roadmap, and skill analytics"
                     className="w-full h-auto drop-shadow-2xl"
                     loading="lazy"
                   />
@@ -388,7 +388,7 @@ const Landing = () => {
             >
               <Sparkles size={16} className="text-accent" />
               <span className="text-sm font-semibold">AI-Powered Analytics</span>
-              <span className="text-xs text-muted-foreground">• Real-time</span>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">• Real-time</span>
             </motion.div>
           </motion.div>
 
@@ -404,7 +404,7 @@ const Landing = () => {
       </section>
 
       {/* ═══ USE CASES ═══ */}
-      <section className="py-24">
+      <section className="pt-24 pb-24">
         <div className="container space-y-16">
           <div className="text-center space-y-4">
             <p className="text-primary font-semibold text-sm tracking-widest uppercase">Who It's For</p>
@@ -462,7 +462,7 @@ const Landing = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { name: "Priya Sharma", role: "SDE at Google", text: "Skill Navigator Pro showed me exactly what skills I was missing. I went from confused to confident — and landed my dream role within 3 months.", avatar: "PS" },
+              { name: "Priya Sharma", role: "SDE at Google", text: "CareerCompass showed me exactly what skills I was missing. I went from confused to confident — and landed my dream role within 3 months.", avatar: "PS" },
               { name: "Rahul Mehta", role: "Data Analyst at Amazon", text: "The roadmap feature is incredibly detailed. It felt like having a personal career mentor who actually understood my goals.", avatar: "RM" },
               { name: "Ananya Singh", role: "Frontend Dev at Razorpay", text: "I was learning randomly before — React one day, Python the next. This gave me structure and I actually finished a full learning path.", avatar: "AS" },
             ].map((t, i) => (
@@ -507,7 +507,7 @@ const Landing = () => {
             transition={{ delay: 0.1 }}
             className="text-muted-foreground text-lg"
           >
-            Join thousands of professionals who found clarity with Skill Navigator Pro.
+            Join thousands of professionals who found clarity with CareerCompass.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -538,9 +538,9 @@ const Landing = () => {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             <div>
               <span className="font-display font-bold text-lg">
-                <span className="text-foreground">Skill</span><span className="text-primary">Navigator</span><span className="text-foreground"> Pro</span>
+                <span className="text-foreground">Career</span><span className="text-primary">Compass</span>
               </span>
-              <p className="text-muted-foreground text-sm mt-2 leading-relaxed">AI-powered skill intelligence platform. Know exactly what to learn for your dream career.</p>
+              <p className="text-muted-foreground text-sm mt-2 leading-relaxed">AI-powered career intelligence platform. Know exactly what to learn for your dream career.</p>
             </div>
             <div>
               <h4 className="font-semibold text-sm mb-3">Product</h4>
@@ -568,7 +568,7 @@ const Landing = () => {
             </div>
           </div>
           <div className="pt-8 border-t border-border/30 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-            <span>© 2026 Skill Navigator Pro. All rights reserved.</span>
+            <span>© 2026 CareerCompass. All rights reserved.</span>
             <span className="flex items-center gap-1">Built with <Sparkles size={14} className="text-primary" /> AI</span>
           </div>
         </div>

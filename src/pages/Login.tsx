@@ -46,7 +46,7 @@ const Login = () => {
               <LogIn className="text-primary-foreground" size={28} />
             </div>
             <h1 className="text-3xl font-display font-bold">Welcome <span className="text-gradient">Back</span></h1>
-            <p className="text-muted-foreground text-sm">Sign in to Skill Navigator Pro to access your roadmaps</p>
+            <p className="text-muted-foreground text-sm">Sign in to CareerCompass to access your roadmaps</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">

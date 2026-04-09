@@ -309,7 +309,7 @@ const Roadmap = () => {
             className="text-center space-y-3"
           >
             <h1 className="font-display text-3xl sm:text-4xl font-bold">
-              Skill <span className="text-gradient">Roadmap Generator</span>
+              Career <span className="text-gradient">Roadmap Generator</span>
             </h1>
             <p className="text-muted-foreground max-w-lg mx-auto">
               Enter any career goal and our AI will generate a detailed, personalized skill roadmap for you.

@@ -24,7 +24,7 @@ const Navbar = () => {
             <Sparkles size={16} className="text-primary-foreground" />
           </div>
           <span className="font-display font-bold text-lg tracking-tight">
-            <span className="text-foreground">Skill</span><span className="text-primary">Navigator</span>
+            <span className="text-foreground">Career</span><span className="text-primary">Compass</span>
           </span>
         </Link>
 
