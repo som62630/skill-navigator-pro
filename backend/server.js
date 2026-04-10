@@ -59,7 +59,6 @@ const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/skill-navi
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   
-  // Choose the right variable
   const FINAL_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
   if (!FINAL_URI) {
@@ -67,35 +66,26 @@ app.listen(PORT, () => {
     return;
   }
 
-  // URI Sanity Checks
-  if (FINAL_URI.includes(' ')) {
-    console.error('⚠️ WARNING: Your MONGO_URI contains spaces. This WILL cause auth failures.');
-  }
-  if (!FINAL_URI.startsWith('mongodb+srv://') && !FINAL_URI.startsWith('mongodb://')) {
-    console.error('⚠️ WARNING: Your MONGO_URI is missing the "://" slashes or has a typo in the protocol.');
-  }
-
   // Extract username for verification
   const userMatch = FINAL_URI.match(/\/\/([^:]+):/);
   const username = userMatch ? userMatch[1] : 'unknown';
-  
-  // Mask password safely (preserving slashes and structure)
   const maskedUri = FINAL_URI.replace(/:([^@/]+)@/, ':****@');
   
-  console.log(`🔗 Protocol: ${FINAL_URI.split(':')[0]}`);
-  console.log(`🔗 Username: [${username}]`);
+  console.log(`🔗 Connecting as user: [${username}]`);
   console.log(`🔗 URI Structure: ${maskedUri}`);
 
+  // Basic connection with simplified options
   mongoose
-    .connect(FINAL_URI, {
-      authSource: 'admin', // Force authentication against the admin database
-      dbName: 'career-compass', // Explicitly set the database name
+    .connect(FINAL_URI) 
+    .then(() => {
+      console.log('✅ Connected to MongoDB Successfully');
+      console.log(`📡 Database Name: ${mongoose.connection.name}`);
     })
-    .then(() => console.log('✅ Connected to MongoDB Successfully'))
     .catch((err) => {
-      console.error('❌ MongoDB Connection Error Details:');
+      console.error('❌ Connection Failed. Details:');
       console.error('   Message:', err.message);
-      console.error('   Code:', err.code);
-      console.log('💡 TIP: If username/structure looks correct, try using the "Standard Connection String" (non-SRV) from Atlas.');
+      console.error('   Code Name:', err.codeName || 'N/A');
+      console.error('   Full Error:', JSON.stringify(err).substring(0, 100));
+      console.log('💡 TIP: If username is correct, the password must be wrong or contain bad characters.');
     });
 });
