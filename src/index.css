@@ -47,16 +47,20 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased scroll-smooth;
+  }
+  
+  ::selection {
+    @apply bg-primary/30 text-white;
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-card/50 backdrop-blur-xl border border-border/50;
+    @apply bg-card/50 backdrop-blur-xl border border-border/50 hover:bg-card/60 hover:border-border/80 transition-all duration-300;
   }
   .glass-strong {
-    @apply bg-card/80 backdrop-blur-2xl border border-border/60;
+    @apply bg-card/80 backdrop-blur-2xl border border-border/60 hover:bg-card/90 hover:border-border/90 transition-all duration-300;
   }
   .glow-sm {
     box-shadow: 0 0 20px -5px hsl(var(--glow-primary) / 0.3);
