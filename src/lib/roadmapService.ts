@@ -175,24 +175,45 @@ function findMockKey(goal: string): string {
   return "default";
 }
 
-// ─── Public API ─────────────────────────────────────────────────────────────
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 /**
  * Generate a skill roadmap for a given career goal.
- * Currently returns mock data. Replace the body with a fetch() call to
- * connect to the real backend:
- *
- * ```ts
- * const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
- * const res = await fetch(`${API_URL}/roadmap/generate`, {
- *   method: "POST",
- *   headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
- *   body: JSON.stringify({ goal }),
- * });
- * return await res.json();
- * ```
+ * Connects to the real backend API.
  */
-export async function generateRoadmap(goal: string, _token?: string): Promise<RoadmapData> {
+export async function generateRoadmap(goal: string, token?: string): Promise<RoadmapData> {
+  if (!token) {
+    console.warn("No auth token provided to generateRoadmap. Falling back to mock data.");
+    return simulateMockRoadmap(goal);
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/roadmap/generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ goal }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Failed to generate roadmap");
+
+    return data;
+  } catch (error) {
+    console.error("Roadmap Generation Error:", error);
+    // Fallback to mock data in development if the backend fails, 
+    // but in production we want to know it failed.
+    if (import.meta.env.DEV) {
+      console.info("Falling back to mock data in development mode.");
+      return simulateMockRoadmap(goal);
+    }
+    throw error;
+  }
+}
+
+async function simulateMockRoadmap(goal: string): Promise<RoadmapData> {
   // Simulate AI thinking delay
   await new Promise((r) => setTimeout(r, 1800 + Math.random() * 1200));
 
