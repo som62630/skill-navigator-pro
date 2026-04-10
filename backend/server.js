@@ -60,11 +60,23 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   
   // Database connection
+  if (!MONGO_URI || MONGO_URI.includes('localhost')) {
+    console.warn('⚠️ WARNING: Using local database connection string. Ensure MONGO_URI is set in environment.');
+  }
+
+  // Mask password for logging
+  const maskedUri = MONGO_URI.replace(/:([^@]+)@/, (match, p1) => match.replace(p1, '****'));
+  console.log(`🔗 Connecting to: ${maskedUri}`);
+
   mongoose
-    .connect(MONGO_URI)
-    .then(() => console.log('✅ Connected to MongoDB'))
+    .connect(MONGO_URI, {
+      authSource: 'admin', // Force authentication against the admin database
+    })
+    .then(() => console.log('✅ Connected to MongoDB Successfully'))
     .catch((err) => {
-      console.error('❌ MongoDB connection error:', err.message);
-      console.log('TIP: Make sure your MongoDB service is running or check your MONGO_URI.');
+      console.error('❌ MongoDB Connection Error Details:');
+      console.error('   Message:', err.message);
+      console.error('   Code:', err.code);
+      console.log('💡 TIP: Check if your password contains special characters or if 0.0.0.0/0 is active in Atlas.');
     });
 });
