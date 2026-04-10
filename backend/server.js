@@ -59,17 +59,25 @@ const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/skill-navi
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   
-  // Database connection
-  if (!MONGO_URI || MONGO_URI.includes('localhost')) {
-    console.warn('⚠️ WARNING: Using local database connection string. Ensure MONGO_URI is set in environment.');
+  // Choose the right variable (some people name it MONGODB_URI by mistake)
+  const FINAL_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+
+  if (!FINAL_URI || FINAL_URI.includes('localhost')) {
+    console.warn('⚠️ WARNING: No cloud MONGO_URI found. Check your Render Environment tab.');
   }
 
+  // Extract username for verification (without password)
+  const userMatch = FINAL_URI ? FINAL_URI.match(/\/\/([^:]+):/) : null;
+  const username = userMatch ? userMatch[1] : 'unknown';
+  
   // Mask password for logging
-  const maskedUri = MONGO_URI.replace(/:([^@]+)@/, (match, p1) => match.replace(p1, '****'));
-  console.log(`🔗 Connecting to: ${maskedUri}`);
+  const maskedUri = FINAL_URI ? FINAL_URI.replace(/:([^@]+)@/, ':****@') : 'none';
+  
+  console.log(`🔗 Connecting as user: [${username}]`);
+  console.log(`🔗 URI Structure: ${maskedUri}`);
 
   mongoose
-    .connect(MONGO_URI, {
+    .connect(FINAL_URI || MONGO_URI, {
       authSource: 'admin', // Force authentication against the admin database
     })
     .then(() => console.log('✅ Connected to MongoDB Successfully'))
@@ -77,6 +85,6 @@ app.listen(PORT, () => {
       console.error('❌ MongoDB Connection Error Details:');
       console.error('   Message:', err.message);
       console.error('   Code:', err.code);
-      console.log('💡 TIP: Check if your password contains special characters or if 0.0.0.0/0 is active in Atlas.');
+      console.log('💡 TIP: If username is correct, reset the password for that user in Atlas with NO special characters.');
     });
 });
