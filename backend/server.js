@@ -53,12 +53,15 @@ app.get('/', (req, res) => {
     ? `Configured 🔑 (${process.env.GEMINI_API_KEY.substring(0, 6)}...)` 
     : 'Missing ❌';
 
+  const key = process.env.GEMINI_API_KEY || '';
+  const keyDiagnostic = key ? `${key.substring(0, 4)}...${key.substring(key.length - 4)}` : 'NOT FOUND';
+
   res.json({ 
-    status: 'CareerCompass Backend v3.0 - LIVE',
-    deploy_check: 'JSON_COMPATIBILITY_MODE_ACTIVE',
+    status: 'CareerCompass Backend v3.1 - DIAGNOSTIC',
+    deploy_check: 'KEY_SYNC_VERIFICATION',
+    key_id: keyDiagnostic,
     database: mongoose.connection.readyState === 1 ? 'Healthy ✅' : 'Disconnected ❌',
     gemini_ai: geminiStatus,
-    environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString()
   });
 });
