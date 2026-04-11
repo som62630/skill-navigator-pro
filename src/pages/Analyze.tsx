@@ -93,7 +93,7 @@ const Analyze = () => {
         <div className="container max-w-2xl relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10 space-y-3">
             <h1 className="font-display text-3xl sm:text-4xl font-bold">
-              Analyze on {import.meta.env.VITE_API_URL?.replace('https://', '').replace('.onrender.com', '') || "Local"}
+              Analyze Your <span className="text-gradient">Resume</span>
             </h1>
             <p className="text-muted-foreground">Upload your resume and we'll show you exactly where you stand.</p>
           </motion.div>
