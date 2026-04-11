@@ -49,9 +49,14 @@ app.use('/roadmap', roadmapRoutes);
 
 // Health check
 app.get('/', (req, res) => {
+  const geminiStatus = process.env.GEMINI_API_KEY 
+    ? `Configured 🔑 (${process.env.GEMINI_API_KEY.substring(0, 6)}...)` 
+    : 'Missing ❌';
+
   res.json({ 
     status: 'CareerCompass Backend is running',
     database: mongoose.connection.readyState === 1 ? 'Healthy ✅' : 'Disconnected ❌',
+    gemini_ai: geminiStatus,
     environment: process.env.NODE_ENV || 'development'
   });
 });
