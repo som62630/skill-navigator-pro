@@ -186,7 +186,6 @@ export async function generateRoadmap(goal: string, token?: string): Promise<Roa
     console.warn("No auth token provided to generateRoadmap. Falling back to mock data.");
     return simulateMockRoadmap(goal);
   }
-
   try {
     const response = await fetch(`${API_URL}/roadmap/generate`, {
       method: "POST",
@@ -203,12 +202,31 @@ export async function generateRoadmap(goal: string, token?: string): Promise<Roa
     return data;
   } catch (error) {
     console.error("Roadmap Generation Error:", error);
-    // Fallback to mock data in development if the backend fails, 
-    // but in production we want to know it failed.
     if (import.meta.env.DEV) {
       console.info("Falling back to mock data in development mode.");
       return simulateMockRoadmap(goal);
     }
+    throw error;
+  }
+}
+
+export async function saveRoadmap(roadmap: RoadmapData, token: string): Promise<any> {
+  try {
+    const response = await fetch(`${API_URL}/roadmap/save`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(roadmap),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Failed to save roadmap");
+
+    return data;
+  } catch (error) {
+    console.error("Save Roadmap Error:", error);
     throw error;
   }
 }

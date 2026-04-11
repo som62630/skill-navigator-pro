@@ -10,8 +10,9 @@ import {
 import Navbar from "@/components/Navbar";
 import ParticleField from "@/components/ParticleField";
 import GlowCard from "@/components/GlowCard";
-import { generateRoadmap, type RoadmapData, type SkillCategory } from "@/lib/roadmapService";
+import { generateRoadmap, saveRoadmap, type RoadmapData, type SkillCategory } from "@/lib/roadmapService";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 /* ─── Icon Map ───────────────────────────────────────────────────────────── */
 
@@ -267,6 +268,7 @@ const Roadmap = () => {
   const [goal, setGoal] = useState(initialGoal);
   const [loading, setLoading] = useState(false);
   const [roadmap, setRoadmap] = useState<RoadmapData | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Auto-generate if navigated with a goal
   useEffect(() => {
@@ -288,6 +290,19 @@ const Roadmap = () => {
       // Error handling
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!roadmap || !token) return;
+    setSaving(true);
+    try {
+      await saveRoadmap(roadmap, token);
+      toast.success("Roadmap saved to your dashboard!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save roadmap");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -438,12 +453,21 @@ const Roadmap = () => {
                     >
                       <RotateCcw size={14} /> New Roadmap
                     </button>
-                    <Link
-                      to="/dashboard"
-                      className="px-4 py-2 rounded-xl gradient-primary text-primary-foreground text-sm font-medium flex items-center gap-2 glow-sm"
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="px-4 py-2 rounded-xl gradient-primary text-primary-foreground text-sm font-medium flex items-center gap-2 glow-sm disabled:opacity-50"
                     >
-                      <Download size={14} /> Save to Dashboard
-                    </Link>
+                      {saving ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" /> Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Download size={14} /> Save to Dashboard
+                        </>
+                      )}
+                    </button>
                   </div>
                 </motion.div>
 
