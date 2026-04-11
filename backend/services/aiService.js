@@ -4,7 +4,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-pro",
+    model: "gemini-1.5-flash",
     generationConfig: { responseMimeType: "application/json" },
   });
 
@@ -80,7 +80,7 @@ exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
 
 exports.chat = async (message, history) => {
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-pro",
+    model: "gemini-1.5-flash",
     systemInstruction: "You are an expert AI Career Coach for software developers. Provide actionable, professional advice. Keep answers concise and markdown-formatted.",
   });
 
@@ -102,7 +102,7 @@ exports.chat = async (message, history) => {
 
 exports.generateRoadmap = async (goal) => {
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-pro",
+    model: "gemini-1.5-flash",
     generationConfig: { responseMimeType: "application/json" },
   });
 
