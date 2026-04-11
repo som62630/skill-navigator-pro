@@ -3,7 +3,8 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY, { apiVersion: "v1" });
 
 // Bulletproof model selection: Tries multiple model names if one is 404/Unavailable
-const MODEL_FALLBACKS = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash-8b", "gemini-pro"];
+// Added gemini-2.0-flash (stable) and gemini-1.5-flash variants
+const MODEL_FALLBACKS = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash-8b"];
 
 async function generateWithFallback(parts, isJson = true) {
   let lastError = null;
@@ -19,11 +20,12 @@ async function generateWithFallback(parts, isJson = true) {
       return isJson ? JSON.parse(text) : text;
     } catch (error) {
       lastError = error;
-      if (error.message.includes("404") || error.message.includes("not found")) {
-        console.warn(`⚠️ Model ${modelName} not found, trying fallback...`);
+      const errText = error.message?.toLowerCase() || "";
+      if (errText.includes("404") || errText.includes("not found") || errText.includes("unavailable")) {
+        console.warn(`⚠️ Model ${modelName} fallback triggered: ${errText}`);
         continue;
       }
-      throw error; // Rethrow if it's not a 404 (e.g., Auth error)
+      throw error; // Rethrow if it's a real error (Auth, Quota, etc.)
     }
   }
   throw lastError;
