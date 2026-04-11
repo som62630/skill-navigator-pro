@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   TrendingUp, AlertTriangle, CheckCircle2, BookOpen,
   FolderGit2, Calendar, ArrowRight, BarChart3, Target,
-  Clock, Zap, ChevronRight, Sparkles, Plus, Route
+  Clock, Zap, ChevronRight, Sparkles, Plus, Route, FileText
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import GlowCard from "@/components/GlowCard";
@@ -109,8 +109,11 @@ const Dashboard = () => {
               <p className="text-muted-foreground text-sm mt-1">Target: {data.role}</p>
             </div>
             <div className="flex gap-3">
-              <Link to="/roadmap" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold glow-sm">
+              <Link to="/roadmap" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold glow-sm hover:opacity-90 transition-opacity">
                 <Plus size={16} /> New Roadmap
+              </Link>
+              <Link to="/analyze" className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-secondary text-secondary text-sm font-semibold hover:bg-secondary/10 transition-colors">
+                <FileText size={16} /> Analyze Resume
               </Link>
               <Link to="/chat" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl glass text-foreground text-sm font-semibold hover:bg-card/70 transition-colors">
                 Talk to AI Coach <ArrowRight size={16} />

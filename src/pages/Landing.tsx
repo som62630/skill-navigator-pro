@@ -5,7 +5,7 @@ import {
   Target, Zap, BarChart3, Route, BrainCircuit, Users,
   ArrowRight, CheckCircle2, Star, Sparkles, Search,
   BookOpen, TrendingUp, Lightbulb, GraduationCap,
-  Code2, Briefcase, ChevronRight
+  Code2, Briefcase, ChevronRight, FileText
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import ParticleField from "@/components/ParticleField";
@@ -192,9 +192,17 @@ const Landing = () => {
                     Generate <ArrowRight size={16} />
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 ml-1">
-                  Try: "Become a Full-Stack Developer" or "Switch to Product Management"
-                </p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4">
+                  <p className="text-xs text-muted-foreground ml-1">
+                    Try: "Become a Full-Stack Developer"
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">or</span>
+                    <Link to="/analyze" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl glass text-foreground text-sm font-semibold hover:bg-card/70 border border-secondary/20 hover:border-secondary/50 transition-all glow-sm">
+                      <FileText size={16} className="text-secondary" /> Analyze Resume
+                    </Link>
+                  </div>
+                </div>
               </motion.div>
 
               <motion.div {...fadeUp} className="flex items-center gap-6 text-sm text-muted-foreground">
@@ -276,10 +284,10 @@ const Landing = () => {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
+              { icon: FileText, title: "Resume Analytics", desc: "Upload your resume and get instant feedback on what skills you are missing for your target role.", color: "text-secondary" },
               { icon: BrainCircuit, title: "Career Analysis", desc: "Advanced AI breaks down any career into its component skills with difficulty ratings.", color: "text-primary" },
-              { icon: Route, title: "Personalized Roadmaps", desc: "Get a week-by-week learning plan tailored to your specific career goal.", color: "text-secondary" },
-              { icon: BarChart3, title: "Progress Tracking", desc: "Track your learning progress with visual dashboards and milestone markers.", color: "text-accent" },
-              { icon: BookOpen, title: "Resource Curation", desc: "Curated free and paid resources for every skill — courses, books, tutorials.", color: "text-destructive" },
+              { icon: Route, title: "Personalized Roadmaps", desc: "Get a week-by-week learning plan tailored to your specific career goal.", color: "text-accent" },
+              { icon: BarChart3, title: "Progress Tracking", desc: "Track your learning progress with visual dashboards and milestone markers.", color: "text-destructive" },
             ].map((f, i) => (
               <GlowCard key={f.title} delay={i * 0.08}>
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
@@ -523,10 +531,10 @@ const Landing = () => {
               Generate My Roadmap <ArrowRight size={20} />
             </Link>
             <Link
-              to="/dashboard"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl glass text-foreground font-bold text-lg hover:bg-card/70 transition-colors"
+              to="/analyze"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl glass border border-secondary/30 hover:border-secondary transition-all text-foreground font-bold text-lg glow-sm"
             >
-              View Demo Dashboard
+              <FileText size={20} className="text-secondary" /> Analyze Resume
             </Link>
           </motion.div>
         </div>
