@@ -3,19 +3,25 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY, { apiVersion: "v1" });
 
 // Bulletproof model selection: Tries multiple model names if one is 404/Unavailable
-// Added gemini-2.0-flash (stable) and gemini-1.5-flash variants
-const MODEL_FALLBACKS = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash-8b"];
+const MODEL_FALLBACKS = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-2.0-flash"];
 
 async function generateWithFallback(parts, isJson = true) {
   let lastError = null;
   
   for (const modelName of MODEL_FALLBACKS) {
     try {
-      const model = genAI.getGenerativeModel({ 
-        model: modelName,
-        generationConfig: isJson ? { responseMimeType: "application/json" } : {}
+      // Explicitly force v1 at the model level as well
+      const model = genAI.getGenerativeModel(
+        { model: modelName },
+        { apiVersion: "v1" }
+      );
+      
+      const generationConfig = isJson ? { responseMimeType: "application/json" } : {};
+      
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts }],
+        generationConfig
       });
-      const result = await model.generateContent(parts);
       const text = result.response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
       return isJson ? JSON.parse(text) : text;
     } catch (error) {
