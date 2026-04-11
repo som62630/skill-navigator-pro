@@ -8,30 +8,26 @@ const MODEL_FALLBACKS = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-
 async function generateWithFallback(parts, isJson = true) {
   let lastError = null;
   
-  for (const modelName of MODEL_FALLBACKS) {
-    try {
-      // Explicitly force v1 at the model level as well
-      const model = genAI.getGenerativeModel(
-        { model: modelName },
-        { apiVersion: "v1" }
-      );
-      
-      const generationConfig = isJson ? { responseMimeType: "application/json" } : {};
+      // Force v1 and use a more standard request format for maximum compatibility
+      const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: "v1" });
       
       const result = await model.generateContent({
         contents: [{ role: "user", parts }],
-        generationConfig
+        // Removed responseMimeType as it causes 400 errors on some stable v1 endpoints
+        generationConfig: {}
       });
+      
       const text = result.response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
       return isJson ? JSON.parse(text) : text;
     } catch (error) {
       lastError = error;
       const errText = error.message?.toLowerCase() || "";
-      if (errText.includes("404") || errText.includes("not found") || errText.includes("unavailable")) {
+      // Catch 400, 404, 429, etc.
+      if (errText.includes("400") || errText.includes("404") || errText.includes("not found") || errText.includes("unavailable") || errText.includes("quota")) {
         console.warn(`⚠️ Model ${modelName} fallback triggered: ${errText}`);
         continue;
       }
-      throw error; // Rethrow if it's a real error (Auth, Quota, etc.)
+      throw error;
     }
   }
   throw lastError;
