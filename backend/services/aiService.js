@@ -2,12 +2,34 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
-    generationConfig: { responseMimeType: "application/json" },
-  });
+// Bulletproof model selection: Tries multiple model names if one is 404/Unavailable
+const MODEL_FALLBACKS = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash-8b", "gemini-pro"];
 
+async function generateWithFallback(parts, isJson = true) {
+  let lastError = null;
+  
+  for (const modelName of MODEL_FALLBACKS) {
+    try {
+      const model = genAI.getGenerativeModel({ 
+        model: modelName,
+        generationConfig: isJson ? { responseMimeType: "application/json" } : {}
+      });
+      const result = await model.generateContent(parts);
+      const text = result.response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
+      return isJson ? JSON.parse(text) : text;
+    } catch (error) {
+      lastError = error;
+      if (error.message.includes("404") || error.message.includes("not found")) {
+        console.warn(`⚠️ Model ${modelName} not found, trying fallback...`);
+        continue;
+      }
+      throw error; // Rethrow if it's not a 404 (e.g., Auth error)
+    }
+  }
+  throw lastError;
+}
+
+exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
   const prompt = `
     Analyze the following resume for a ${level}-level ${role} position.
 
@@ -33,41 +55,26 @@ exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
   `;
 
   let parts = [];
-
-  // Data first
   if (mimeType === "application/pdf") {
-    parts.push({
-      inlineData: {
-        data: resumeBuffer.toString("base64"),
-        mimeType: "application/pdf",
-      },
-    });
+    parts.push({ inlineData: { data: resumeBuffer.toString("base64"), mimeType: "application/pdf" } });
   } else {
     parts.push({ text: "Resume Content:\n" + resumeBuffer.toString("utf-8") });
   }
-
-  // Prompt last
   parts.push({ text: prompt });
 
   try {
-    const result = await model.generateContent(parts);
-    const response = result.response;
-    const text = response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
-    return JSON.parse(text);
+    return await generateWithFallback(parts, true);
   } catch (error) {
     console.error("Gemini Analysis Primary Error:", error);
 
-    // Fallback: If it's a PDF and it failed, try to just treat it as text (sometimes helps if PDF parsing crashes)
+    // Deep Fallback: If PDF parsing itself is the issue, try raw text
     if (mimeType === "application/pdf") {
       try {
-        console.log("Attempting text-extraction fallback for PDF...");
         const fallbackParts = [
           { text: "Resume Content (as raw text):\n" + resumeBuffer.toString("utf-8") },
           { text: prompt }
         ];
-        const result = await model.generateContent(fallbackParts);
-        const text = result.response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
-        return JSON.parse(text);
+        return await generateWithFallback(fallbackParts, true);
       } catch (fallbackError) {
         console.error("Gemini Analysis Fallback Error:", fallbackError);
       }
@@ -79,21 +86,14 @@ exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
 };
 
 exports.chat = async (message, history) => {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
-    systemInstruction: "You are an expert AI Career Coach for software developers. Provide actionable, professional advice. Keep answers concise and markdown-formatted.",
-  });
+  const parts = history.map((m) => ({
+    text: `${m.role === "assistant" ? "AI Coach" : "User"}: ${m.content}`
+  }));
+  parts.unshift({ text: "You are an expert AI Career Coach for software developers. Provide actionable, professional advice. Keep answers concise and markdown-formatted." });
+  parts.push({ text: `User message: ${message}` });
 
   try {
-    const chat = model.startChat({
-      history: history.map((m) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }],
-      })),
-    });
-
-    const result = await chat.sendMessage(message);
-    return result.response.text();
+    return await generateWithFallback(parts, false);
   } catch (error) {
     console.error("Gemini Chat Error:", error);
     throw new Error("Failed to get response from Gemini AI.");
@@ -101,11 +101,6 @@ exports.chat = async (message, history) => {
 };
 
 exports.generateRoadmap = async (goal) => {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
-    generationConfig: { responseMimeType: "application/json" },
-  });
-
   const prompt = `
     Generate a comprehensive skill roadmap for someone who wants to become a "${goal}".
     
@@ -152,10 +147,7 @@ exports.generateRoadmap = async (goal) => {
   `;
 
   try {
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
-    return JSON.parse(text);
+    return await generateWithFallback([{ text: prompt }], true);
   } catch (error) {
     console.error("Gemini Roadmap Error:", error);
     throw new Error("Failed to generate roadmap with Gemini AI.");
