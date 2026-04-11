@@ -212,6 +212,12 @@ const Analyze = () => {
               )}
             </button>
           </motion.form>
+          
+          <div className="mt-8 text-center">
+            <p className="text-[10px] text-muted-foreground opacity-30">
+              Diagnostic: {import.meta.env.VITE_API_URL || "http://localhost:5001"}
+            </p>
+          </div>
         </div>
       </div>
     </div>
