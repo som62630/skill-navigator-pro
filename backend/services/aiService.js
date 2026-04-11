@@ -2,8 +2,9 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY, { apiVersion: "v1" });
 
-// Bulletproof model selection: Tries multiple model names if one is 404/Unavailable
-const MODEL_FALLBACKS = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-2.0-flash"];
+// Bulletproof model selection: Tries multiple model names if one is 404/Unavailable or 429 Rate Limited
+// Priority: Flash-Latest -> Flash -> Pro
+const MODEL_FALLBACKS = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-1.5-pro"];
 
 async function generateWithFallback(parts, isJson = true) {
   let lastError = null;
@@ -15,7 +16,6 @@ async function generateWithFallback(parts, isJson = true) {
       
       const result = await model.generateContent({
         contents: [{ role: "user", parts }],
-        // Removed responseMimeType as it causes 400 errors on some stable v1 endpoints
         generationConfig: {}
       });
       
@@ -24,9 +24,9 @@ async function generateWithFallback(parts, isJson = true) {
     } catch (error) {
       lastError = error;
       const errText = error.message?.toLowerCase() || "";
-      // Catch 400, 404, 429, etc.
-      if (errText.includes("400") || errText.includes("404") || errText.includes("not found") || errText.includes("unavailable") || errText.includes("quota")) {
-        console.warn(`⚠️ Model ${modelName} fallback triggered: ${errText}`);
+      // Catch 400 (Bad), 404 (Not Found), 429 (Quota), 503 (Unavailable)
+      if (errText.includes("400") || errText.includes("404") || errText.includes("429") || errText.includes("not found") || errText.includes("quota") || errText.includes("limit") || errText.includes("unavailable")) {
+        console.warn(`⚠️ Model ${modelName} fallback triggered: ${errText.substring(0, 100)}...`);
         continue;
       }
       throw error;
