@@ -54,7 +54,8 @@ app.get('/', (req, res) => {
     : 'Missing ❌';
 
   res.json({ 
-    status: 'CareerCompass Backend is running',
+    status: 'CareerCompass Backend v2.0 - LIVE',
+    deploy_check: 'SUCCESS - FIXED V1 API',
     database: mongoose.connection.readyState === 1 ? 'Healthy ✅' : 'Disconnected ❌',
     gemini_ai: geminiStatus,
     environment: process.env.NODE_ENV || 'development'
