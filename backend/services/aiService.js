@@ -8,6 +8,8 @@ const MODEL_FALLBACKS = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-
 async function generateWithFallback(parts, isJson = true) {
   let lastError = null;
   
+  for (const modelName of MODEL_FALLBACKS) {
+    try {
       // Force v1 and use a more standard request format for maximum compatibility
       const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: "v1" });
       
