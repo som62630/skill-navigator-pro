@@ -1,6 +1,7 @@
 const Analysis = require('../models/Analysis');
 const aiService = require('../services/aiService');
-const pdf = require('pdf-parse');
+const pdfParse = require('pdf-parse');
+const pdf = typeof pdfParse === 'function' ? pdfParse : (pdfParse.default || pdfParse);
 
 exports.analyzeResume = async (req, res) => {
   try {

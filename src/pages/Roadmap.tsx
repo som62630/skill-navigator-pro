@@ -11,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import ParticleField from "@/components/ParticleField";
 import GlowCard from "@/components/GlowCard";
 import { generateRoadmap, type RoadmapData, type SkillCategory } from "@/lib/roadmapService";
+import { useAuth } from "@/context/AuthContext";
 
 /* ─── Icon Map ───────────────────────────────────────────────────────────── */
 
@@ -260,6 +261,7 @@ const TimelineSection = ({ timeline }: { timeline: RoadmapData["timeline"] }) =>
 
 const Roadmap = () => {
   const location = useLocation();
+  const { token, isAuthenticated } = useAuth();
   const initialGoal = (location.state as { goal?: string } | null)?.goal || "";
 
   const [goal, setGoal] = useState(initialGoal);
@@ -280,7 +282,7 @@ const Roadmap = () => {
     setLoading(true);
     setRoadmap(null);
     try {
-      const data = await generateRoadmap(g);
+      const data = await generateRoadmap(g, token || undefined);
       setRoadmap(data);
     } catch {
       // Error handling
