@@ -2,9 +2,18 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY, { apiVersion: "v1" });
 
-// Bulletproof model selection: Tries multiple model names if one is 404/Unavailable or 429 Rate Limited
-// Priority: Flash-Latest -> Flash -> Pro
-const MODEL_FALLBACKS = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-1.5-pro"];
+// Bulletproof model selection: Tries EVERY possible model name to find one that works on the user's account
+const MODEL_FALLBACKS = [
+  "gemini-1.5-flash-latest", 
+  "gemini-1.5-flash", 
+  "gemini-1.5-pro-latest",
+  "gemini-1.5-pro",
+  "gemini-2.0-flash-exp",
+  "gemini-pro",
+  "gemini-1.0-pro",
+  "gemini-1.5-flash-001",
+  "gemini-1.5-flash-002"
+];
 
 async function generateWithFallback(parts, isJson = true) {
   let lastError = null;
