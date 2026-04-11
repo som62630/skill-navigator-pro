@@ -52,7 +52,9 @@ exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
     return JSON.parse(text);
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
-    throw new Error("Failed to analyze resume with Gemini AI.");
+    // Return specific error message for debugging
+    const errMsg = error.message || "Unknown AI error";
+    throw new Error(`AI Error: ${errMsg}`);
   }
 };
 
