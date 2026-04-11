@@ -8,20 +8,9 @@ exports.analyzeResume = async (req, res) => {
     const { name, role, level } = req.body;
     if (!req.file) return res.status(400).json({ message: "No file uploaded." });
 
-    const dataBuffer = req.file.buffer;
-    let resumeText = "";
-    
-    if (req.file.mimetype === "application/pdf") {
-      const data = await pdf(dataBuffer);
-      resumeText = data.text;
-    } else {
-      // Support for future text-based files
-      resumeText = dataBuffer.toString("utf-8");
-    }
+    const analysisResults = await aiService.analyzeResume(req.file.buffer, req.file.mimetype, role, level);
 
-    if (!resumeText) return res.status(400).json({ message: "Could not extract text from file." });
-
-    const analysisResults = await aiService.analyzeResume(resumeText, role, level);
+    if (!analysisResults) return res.status(400).json({ message: "Could not analyze resume." });
 
     const savedAnalysis = await Analysis.create({
       userId: req.user.id,

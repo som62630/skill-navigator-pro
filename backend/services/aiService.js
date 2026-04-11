@@ -2,7 +2,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-exports.analyzeResume = async (resumeText, role, level) => {
+exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-pro",
     generationConfig: { responseMimeType: "application/json" },
@@ -10,9 +10,6 @@ exports.analyzeResume = async (resumeText, role, level) => {
 
   const prompt = `
     Analyze the following resume for a ${level}-level ${role} position.
-    
-    Resume Content:
-    ${resumeText}
 
     Return a strictly structured JSON response with the following fields:
     {
@@ -35,10 +32,24 @@ exports.analyzeResume = async (resumeText, role, level) => {
     Ensure the response is valid JSON and contains NO other text.
   `;
 
+  let parts = [{ text: prompt }];
+
+  if (mimeType === "application/pdf") {
+    parts.push({
+      inlineData: {
+        data: resumeBuffer.toString("base64"),
+        mimeType: "application/pdf",
+      },
+    });
+  } else {
+    parts.push({ text: "\nResume Content:\n" + resumeBuffer.toString("utf-8") });
+  }
+
   try {
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(parts);
     const response = result.response;
-    return JSON.parse(response.text());
+    const text = response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
+    return JSON.parse(text);
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
     throw new Error("Failed to analyze resume with Gemini AI.");
@@ -121,7 +132,8 @@ exports.generateRoadmap = async (goal) => {
   try {
     const result = await model.generateContent(prompt);
     const response = result.response;
-    return JSON.parse(response.text());
+    const text = response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
+    return JSON.parse(text);
   } catch (error) {
     console.error("Gemini Roadmap Error:", error);
     throw new Error("Failed to generate roadmap with Gemini AI.");
