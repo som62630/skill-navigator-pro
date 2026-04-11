@@ -57,13 +57,24 @@ app.get('/', (req, res) => {
   const keyDiagnostic = key ? `${key.substring(0, 4)}...${key.substring(key.length - 4)}` : 'NOT FOUND';
 
   res.json({ 
-    status: 'CareerCompass Backend v3.1 - DIAGNOSTIC',
-    deploy_check: 'KEY_SYNC_VERIFICATION',
+    status: 'CareerCompass Backend v3.2 - STABLE',
+    deploy_check: 'SUPER_FALLBACK_ACTIVE',
     key_id: keyDiagnostic,
     database: mongoose.connection.readyState === 1 ? 'Healthy ✅' : 'Disconnected ❌',
     gemini_ai: geminiStatus,
     timestamp: new Date().toISOString()
   });
+});
+
+// Diagnostic Endpoint: Test AI connectivity without a file
+app.get('/api/ai-test', async (req, res) => {
+  try {
+    const aiService = require('./services/aiService');
+    const result = await aiService.chat("Hello! This is a test. Please respond with 'Connection Healthy'.", []);
+    res.json({ status: 'Success ✅', ai_response: result });
+  } catch (error) {
+    res.status(500).json({ status: 'Failed ❌', error: error.message });
+  }
 });
 
 // Database & Port Config

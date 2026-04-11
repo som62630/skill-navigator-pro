@@ -6,39 +6,38 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY, { apiVersion: "
 const MODEL_FALLBACKS = [
   "gemini-1.5-flash-latest", 
   "gemini-1.5-flash", 
-  "gemini-1.5-pro-latest",
+  "gemini-2.0-flash", 
   "gemini-1.5-pro",
-  "gemini-2.0-flash-exp",
-  "gemini-pro",
-  "gemini-1.0-pro",
-  "gemini-1.5-flash-001",
-  "gemini-1.5-flash-002"
+  "gemini-pro"
 ];
+const VERSION_FALLBACKS = ["v1", "v1beta"];
 
 async function generateWithFallback(parts, isJson = true) {
   let lastError = null;
   
   for (const modelName of MODEL_FALLBACKS) {
-    try {
-      // Force v1 and use a more standard request format for maximum compatibility
-      const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: "v1" });
-      
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts }],
-        generationConfig: {}
-      });
-      
-      const text = result.response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
-      return isJson ? JSON.parse(text) : text;
-    } catch (error) {
-      lastError = error;
-      const errText = error.message?.toLowerCase() || "";
-      // Catch 400 (Bad), 404 (Not Found), 429 (Quota), 503 (Unavailable)
-      if (errText.includes("400") || errText.includes("404") || errText.includes("429") || errText.includes("not found") || errText.includes("quota") || errText.includes("limit") || errText.includes("unavailable")) {
-        console.warn(`⚠️ Model ${modelName} fallback triggered: ${errText.substring(0, 100)}...`);
-        continue;
+    for (const apiVersion of VERSION_FALLBACKS) {
+      try {
+        console.log(`📡 Trying AI: ${modelName} (${apiVersion})...`);
+        const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion });
+        
+        const result = await model.generateContent({
+          contents: [{ role: "user", parts }],
+          generationConfig: {}
+        });
+        
+        const text = result.response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
+        return isJson ? JSON.parse(text) : text;
+      } catch (error) {
+        lastError = error;
+        const errText = error.message?.toLowerCase() || "";
+        // Catch 400 (Bad), 404 (Not Found), 429 (Quota), 503 (Unavailable)
+        if (errText.includes("400") || errText.includes("404") || errText.includes("429") || errText.includes("not found") || errText.includes("quota") || errText.includes("limit") || errText.includes("unavailable")) {
+          console.warn(`⚠️ Fallback triggered for ${modelName} (${apiVersion}): ${errText.substring(0, 50)}...`);
+          continue;
+        }
+        throw error;
       }
-      throw error;
     }
   }
   throw lastError;
