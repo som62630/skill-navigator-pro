@@ -32,8 +32,9 @@ exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
     Ensure the response is valid JSON and contains NO other text.
   `;
 
-  let parts = [{ text: prompt }];
+  let parts = [];
 
+  // Data first
   if (mimeType === "application/pdf") {
     parts.push({
       inlineData: {
@@ -42,8 +43,11 @@ exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
       },
     });
   } else {
-    parts.push({ text: "\nResume Content:\n" + resumeBuffer.toString("utf-8") });
+    parts.push({ text: "Resume Content:\n" + resumeBuffer.toString("utf-8") });
   }
+
+  // Prompt last
+  parts.push({ text: prompt });
 
   try {
     const result = await model.generateContent(parts);
@@ -51,8 +55,24 @@ exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
     const text = response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
     return JSON.parse(text);
   } catch (error) {
-    console.error("Gemini Analysis Error:", error);
-    // Return specific error message for debugging
+    console.error("Gemini Analysis Primary Error:", error);
+
+    // Fallback: If it's a PDF and it failed, try to just treat it as text (sometimes helps if PDF parsing crashes)
+    if (mimeType === "application/pdf") {
+      try {
+        console.log("Attempting text-extraction fallback for PDF...");
+        const fallbackParts = [
+          { text: "Resume Content (as raw text):\n" + resumeBuffer.toString("utf-8") },
+          { text: prompt }
+        ];
+        const result = await model.generateContent(fallbackParts);
+        const text = result.response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
+        return JSON.parse(text);
+      } catch (fallbackError) {
+        console.error("Gemini Analysis Fallback Error:", fallbackError);
+      }
+    }
+
     const errMsg = error.message || "Unknown AI error";
     throw new Error(`AI Error: ${errMsg}`);
   }
