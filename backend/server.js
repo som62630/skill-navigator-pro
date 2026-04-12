@@ -82,9 +82,9 @@ app.get('/api/ai-models', async (req, res) => {
   try {
     const { GoogleGenerativeAI } = require("@google/generative-ai");
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: "v1" });
     const result = await model.generateContent("test");
-    res.json({ status: 'Key is working! ✅', response: result.response.text() });
+    res.json({ status: 'Key is working on v1! ✅', response: result.response.text() });
   } catch (error) {
     res.status(500).json({ status: 'Key is failing ❌', error: error.message });
   }
