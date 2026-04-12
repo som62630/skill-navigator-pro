@@ -72,8 +72,17 @@ app.get('/api/ai-test', async (req, res) => {
     const aiService = require('./services/aiService');
     const result = await aiService.chat("Hello! This is a test. Please respond with 'Connection Healthy'.", []);
     res.json({ status: 'Success ✅', ai_response: result });
+// Diagnostic Endpoint: List all models available to the key
+app.get('/api/ai-models', async (req, res) => {
+  try {
+    const { GoogleGenerativeAI } = require("@google/generative-ai");
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    // There isn't a simple listModels in the main SDK class, but we can try a basic gen
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent("test");
+    res.json({ status: 'Key is working! ✅', response: result.response.text() });
   } catch (error) {
-    res.status(500).json({ status: 'Failed ❌', error: error.message });
+    res.status(500).json({ status: 'Key is failing ❌', error: error.message });
   }
 });
 
