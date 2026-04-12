@@ -110,7 +110,8 @@ exports.chat = async (message, history) => {
     return await generateWithFallback(parts, false);
   } catch (error) {
     console.error("Gemini Chat Error:", error);
-    throw new Error("Failed to get response from Gemini AI.");
+    const errMsg = error.message || "Unknown AI error";
+    throw new Error(`AI Error: ${errMsg}`);
   }
 };
 
