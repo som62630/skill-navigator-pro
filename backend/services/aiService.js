@@ -90,27 +90,13 @@ async function generateWithFallback(parts, isJson = true) {
 
 exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
   const prompt = `
-    Analyze the following resume for a ${level}-level ${role} position.
-
-    Return a strictly structured JSON response with the following fields:
+    Analyze resume for ${level} ${role}. Return ONLY JSON:
     {
-      "score": (number 0-100),
-      "strengths": [string],
-      "weaknesses": [string],
-      "missing": [string],
-      "suggested": [string],
-      "roadmap": [ (exactly 4 items)
-        { "week": "Week 1-2", "title": "string", "tasks": [string] },
-        { "week": "Week 3-4", "title": "string", "tasks": [string] },
-        { "week": "Week 5-6", "title": "string", "tasks": [string] },
-        { "week": "Week 7-8", "title": "string", "tasks": [string] }
-      ],
-      "projects": [ (exactly 3 projects)
-        { "title": "string", "desc": "string", "difficulty": "Beginner|Intermediate|Advanced" }
-      ]
+      "score": 0-100,
+      "strengths": [string], "weaknesses": [string], "missing": [string], "suggested": [string],
+      "roadmap": [{ "week": "Week 1-2", "title": "string", "tasks": [string] }, ... (4 items)],
+      "projects": [{ "title": "string", "desc": "string", "difficulty": "Beginner|Intermediate|Advanced" } (3 items)]
     }
-
-    Ensure the response is valid JSON and contains NO other text.
   `;
 
   let parts = [];
@@ -162,48 +148,13 @@ exports.chat = async (message, history) => {
 
 exports.generateRoadmap = async (goal) => {
   const prompt = `
-    Generate a comprehensive skill roadmap for someone who wants to become a "${goal}".
-    
-    Return a strictly structured JSON response with the following format:
+    Generate skill roadmap for becoming a "${goal}". Return ONLY JSON:
     {
-      "goal": "${goal}",
-      "summary": "A 1-2 sentence description of this career path",
-      "estimatedWeeks": (number, estimated total weeks to become proficient),
-      "categories": [
-        {
-          "name": "Category Name (e.g., Programming Fundamentals)",
-          "icon": "Code2",
-          "color": "text-primary",
-          "overallProgress": 0,
-          "skills": [
-            {
-              "name": "Skill Name",
-              "description": "Brief description of this skill",
-              "difficulty": "Beginner|Intermediate|Advanced",
-              "estimatedHours": (number),
-              "progress": 0,
-              "resources": ["Resource 1", "Resource 2"]
-            }
-          ]
-        }
-      ],
-      "timeline": [
-        {
-          "week": "Week X-Y",
-          "title": "Phase Title",
-          "tasks": ["Task 1", "Task 2", "Task 3"],
-          "completed": false
-        }
-      ]
+      "goal": "${goal}", "summary": "1-2 sentence description", "estimatedWeeks": number,
+      "categories": [{ "name": "string", "icon": "Code2|Globe|Database|...", "color": "text-primary|...", "overallProgress": 0, "skills": [...] } (4 items)],
+      "timeline": [{ "week": "Week X-Y", "title": "string", "tasks": [string], "completed": false } (4-6 items)]
     }
-    
-    Requirements:
-    - Include exactly 4 categories with 3-5 skills each
-    - Include 4-6 timeline phases
-    - Use only these icon names: Code2, Globe, Database, Settings, Calculator, Presentation, BrainCircuit, Target, BookOpen, BarChart3, Zap
-    - Use only these color classes: text-primary, text-secondary, text-accent, text-destructive
-    - Resources should be real, well-known learning resources
-    - Ensure the response is valid JSON and contains NO other text
+    Icons: Code2, Globe, Database, Settings, Calculator, Presentation, BrainCircuit, Target, BookOpen, BarChart3, Zap. Colors: text-primary, text-secondary, text-accent, text-destructive.
   `;
 
   try {
