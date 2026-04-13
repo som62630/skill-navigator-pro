@@ -4,11 +4,10 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY, { apiVersion: "
 
 // Bulletproof model selection: Tries EVERY possible model name to find one that works on the user's account
 const MODEL_FALLBACKS = [
-  "gemini-1.5-flash-latest", 
   "gemini-1.5-flash", 
-  "gemini-2.0-flash", 
   "gemini-1.5-pro",
-  "gemini-pro"
+  "gemini-2.0-flash-exp",
+  "gemini-2.0-flash"
 ];
 const VERSION_FALLBACKS = ["v1", "v1beta"];
 
@@ -23,24 +22,57 @@ async function generateWithFallback(parts, isJson = true) {
         
         const result = await model.generateContent({
           contents: [{ role: "user", parts }],
-          generationConfig: {}
+          generationConfig: {
+            temperature: 0.1, // Lower temperature for more consistent JSON
+          }
         });
         
-        const text = result.response.text().replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
-        return isJson ? JSON.parse(text) : text;
+        const responseText = result.response.text();
+        if (!responseText) throw new Error("Empty response from AI");
+
+        const cleanedText = responseText.replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
+        
+        if (isJson) {
+          try {
+            return JSON.parse(cleanedText);
+          } catch (jsonError) {
+            console.warn(`🧩 JSON Parse Error for ${modelName}:`, jsonError.message);
+            // If it failed to parse, maybe try the next version/model as fallback
+            lastError = jsonError;
+            continue; 
+          }
+        }
+        return cleanedText;
       } catch (error) {
         lastError = error;
         const errText = error.message?.toLowerCase() || "";
-        // Catch 400 (Bad), 404 (Not Found), 429 (Quota), 503 (Unavailable)
-        if (errText.includes("400") || errText.includes("404") || errText.includes("429") || errText.includes("not found") || errText.includes("quota") || errText.includes("limit") || errText.includes("unavailable")) {
+        
+        // Handle specific API errors that should trigger fallback
+        const isRetryable = 
+          errText.includes("400") || 
+          errText.includes("404") || 
+          errText.includes("429") || 
+          errText.includes("500") ||
+          errText.includes("503") ||
+          errText.includes("not found") || 
+          errText.includes("quota") || 
+          errText.includes("limit") || 
+          errText.includes("unavailable") ||
+          errText.includes("fetch") ||
+          errText.includes("model");
+
+        if (isRetryable) {
           console.warn(`⚠️ Fallback triggered for ${modelName} (${apiVersion}): ${errText.substring(0, 50)}...`);
           continue;
         }
+        
+        // If it's a critical error (like safety block), throw immediately
+        console.error(`❌ Non-retryable error for ${modelName}:`, error.message);
         throw error;
       }
     }
   }
-  throw lastError;
+  throw lastError || new Error("All AI models failed");
 }
 
 exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
