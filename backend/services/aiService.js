@@ -11,64 +11,77 @@ const MODEL_FALLBACKS = [
 ];
 const VERSION_FALLBACKS = ["v1", "v1beta"];
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 async function generateWithFallback(parts, isJson = true) {
   let lastError = null;
   
   for (const modelName of MODEL_FALLBACKS) {
     for (const apiVersion of VERSION_FALLBACKS) {
-      try {
-        console.log(`📡 Trying AI: ${modelName} (${apiVersion})...`);
-        const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion });
-        
-        const result = await model.generateContent({
-          contents: [{ role: "user", parts }],
-          generationConfig: {
-            temperature: 0.1, // Lower temperature for more consistent JSON
-          }
-        });
-        
-        const responseText = result.response.text();
-        if (!responseText) throw new Error("Empty response from AI");
+      let retryCount = 0;
+      const MAX_RETRIES = 2; // Only retry 429 errors
 
-        const cleanedText = responseText.replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
-        
-        if (isJson) {
-          try {
-            return JSON.parse(cleanedText);
-          } catch (jsonError) {
-            console.warn(`🧩 JSON Parse Error for ${modelName}:`, jsonError.message);
-            // If it failed to parse, maybe try the next version/model as fallback
-            lastError = jsonError;
-            continue; 
-          }
-        }
-        return cleanedText;
-      } catch (error) {
-        lastError = error;
-        const errText = error.message?.toLowerCase() || "";
-        
-        // Handle specific API errors that should trigger fallback
-        const isRetryable = 
-          errText.includes("400") || 
-          errText.includes("404") || 
-          errText.includes("429") || 
-          errText.includes("500") ||
-          errText.includes("503") ||
-          errText.includes("not found") || 
-          errText.includes("quota") || 
-          errText.includes("limit") || 
-          errText.includes("unavailable") ||
-          errText.includes("fetch") ||
-          errText.includes("model");
+      while (retryCount <= MAX_RETRIES) {
+        try {
+          console.log(`📡 Trying AI: ${modelName} (${apiVersion})... ${retryCount > 0 ? `(Retry ${retryCount})` : ''}`);
+          const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion });
+          
+          const result = await model.generateContent({
+            contents: [{ role: "user", parts }],
+            generationConfig: {
+              temperature: 0.1,
+            }
+          });
+          
+          const responseText = result.response.text();
+          if (!responseText) throw new Error("Empty response from AI");
 
-        if (isRetryable) {
-          console.warn(`⚠️ Fallback triggered for ${modelName} (${apiVersion}): ${errText.substring(0, 50)}...`);
-          continue;
+          const cleanedText = responseText.replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
+          
+          if (isJson) {
+            try {
+              return JSON.parse(cleanedText);
+            } catch (jsonError) {
+              console.warn(`🧩 JSON Parse Error for ${modelName}:`, jsonError.message);
+              lastError = jsonError;
+              break; // Don't retry JSON parse errors with the same model
+            }
+          }
+          return cleanedText;
+        } catch (error) {
+          lastError = error;
+          const errText = error.message?.toLowerCase() || "";
+          
+          // Handle 429 (Too Many Requests) with specific retry pause
+          if (errText.includes("429") || errText.includes("quota") || errText.includes("too many requests")) {
+            if (retryCount < MAX_RETRIES) {
+              const waitTime = (retryCount + 1) * 3000; // 3s, then 6s
+              console.warn(`⏳ Quota exceeded (429). Waiting ${waitTime/1000}s before retry...`);
+              await sleep(waitTime);
+              retryCount++;
+              continue;
+            }
+          }
+
+          // Handle other retryable API errors (cycle to next model)
+          const isRetryable = 
+            errText.includes("400") || 
+            errText.includes("404") || 
+            errText.includes("500") ||
+            errText.includes("503") ||
+            errText.includes("not found") || 
+            errText.includes("unavailable") ||
+            errText.includes("fetch") ||
+            errText.includes("model");
+
+          if (isRetryable) {
+            console.warn(`⚠️ Fallback triggered for ${modelName} (${apiVersion}): ${errText.substring(0, 50)}...`);
+            break; // Exit the while loop to try next model/version
+          }
+          
+          console.error(`❌ Non-retryable error for ${modelName}:`, error.message);
+          throw error;
         }
-        
-        // If it's a critical error (like safety block), throw immediately
-        console.error(`❌ Non-retryable error for ${modelName}:`, error.message);
-        throw error;
       }
     }
   }
