@@ -19,7 +19,7 @@ async function generateWithFallback(parts, isJson = true) {
   for (const modelName of MODEL_FALLBACKS) {
     for (const apiVersion of VERSION_FALLBACKS) {
       let retryCount = 0;
-      const MAX_RETRIES = 2; // Only retry 429 errors
+      const MAX_RETRIES = 2;
 
       while (retryCount <= MAX_RETRIES) {
         try {
@@ -28,9 +28,7 @@ async function generateWithFallback(parts, isJson = true) {
           
           const result = await model.generateContent({
             contents: [{ role: "user", parts }],
-            generationConfig: {
-              temperature: 0.1,
-            }
+            generationConfig: { temperature: 0.1 }
           });
           
           const responseText = result.response.text();
@@ -44,7 +42,7 @@ async function generateWithFallback(parts, isJson = true) {
             } catch (jsonError) {
               console.warn(`🧩 JSON Parse Error for ${modelName}:`, jsonError.message);
               lastError = jsonError;
-              break; // Don't retry JSON parse errors with the same model
+              break; 
             }
           }
           return cleanedText;
@@ -52,18 +50,24 @@ async function generateWithFallback(parts, isJson = true) {
           lastError = error;
           const errText = error.message?.toLowerCase() || "";
           
-          // Handle 429 (Too Many Requests) with specific retry pause
+          // Smart 429 Handling: Parse suggested wait time
           if (errText.includes("429") || errText.includes("quota") || errText.includes("too many requests")) {
+            // Extract "retry in X.Xs" or similar patterns
+            const waitMatch = error.message.match(/retry in (\d+\.?\d*)s/i);
+            const suggestedWait = waitMatch ? parseFloat(waitMatch[1]) * 1000 : null;
+            
             if (retryCount < MAX_RETRIES) {
-              const waitTime = (retryCount + 1) * 3000; // 3s, then 6s
-              console.warn(`⏳ Quota exceeded (429). Waiting ${waitTime/1000}s before retry...`);
+              const waitTime = suggestedWait ? Math.min(suggestedWait + 1000, 30000) : (retryCount + 1) * 5000;
+              console.warn(`⏳ Quota exceeded. Waiting ${waitTime/1000}s based on API feedback...`);
               await sleep(waitTime);
               retryCount++;
               continue;
             }
+            
+            // If all retries fail, throw a clean quota message
+            throw new Error("AI is currently busy due to high demand. Please try again in 1-2 minutes.");
           }
 
-          // Handle other retryable API errors (cycle to next model)
           const isRetryable = 
             errText.includes("400") || 
             errText.includes("404") || 
@@ -76,92 +80,67 @@ async function generateWithFallback(parts, isJson = true) {
 
           if (isRetryable) {
             console.warn(`⚠️ Fallback triggered for ${modelName} (${apiVersion}): ${errText.substring(0, 50)}...`);
-            break; // Exit the while loop to try next model/version
+            break;
           }
           
-          console.error(`❌ Non-retryable error for ${modelName}:`, error.message);
           throw error;
         }
       }
     }
   }
-  throw lastError || new Error("All AI models failed");
+  throw lastError || new Error("The AI service is temporarily unavailable. Please try again shortly.");
 }
 
 exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
-  const prompt = `
-    Analyze resume for ${level} ${role}. Return ONLY JSON:
-    {
-      "score": 0-100,
-      "strengths": [string], "weaknesses": [string], "missing": [string], "suggested": [string],
+  // Compression: Using extremely concise prompt to save tokens
+  const prompt = `Analyze resume for ${level} ${role}. Return ONLY JSON:
+    { "score": 0-100, "strengths": [string], "weaknesses": [string], "missing": [string], "suggested": [string],
       "roadmap": [{ "week": "Week 1-2", "title": "string", "tasks": [string] }, ... (4 items)],
-      "projects": [{ "title": "string", "desc": "string", "difficulty": "Beginner|Intermediate|Advanced" } (3 items)]
-    }
-  `;
+      "projects": [{ "title": "string", "desc": "string", "difficulty": "Beginner|Intermediate|Advanced" } (3 items)] }`;
 
   let parts = [];
   if (mimeType === "application/pdf") {
     parts.push({ inlineData: { data: resumeBuffer.toString("base64"), mimeType: "application/pdf" } });
   } else {
-    parts.push({ text: "Resume Content:\n" + resumeBuffer.toString("utf-8") });
+    parts.push({ text: "Resume:\n" + resumeBuffer.toString("utf-8") });
   }
   parts.push({ text: prompt });
 
   try {
     return await generateWithFallback(parts, true);
   } catch (error) {
-    console.error("Gemini Analysis Primary Error:", error);
-
-    // Deep Fallback: If PDF parsing itself is the issue, try raw text
     if (mimeType === "application/pdf") {
       try {
-        const fallbackParts = [
-          { text: "Resume Content (as raw text):\n" + resumeBuffer.toString("utf-8") },
-          { text: prompt }
-        ];
-        return await generateWithFallback(fallbackParts, true);
-      } catch (fallbackError) {
-        console.error("Gemini Analysis Fallback Error:", fallbackError);
-      }
+        return await generateWithFallback([{ text: "Resume:\n" + resumeBuffer.toString("utf-8") }, { text: prompt }], true);
+      } catch (fError) { /* ignore fallback error and throw primary */ }
     }
-
-    const errMsg = error.message || "Unknown AI error";
-    throw new Error(`AI Error: ${errMsg}`);
+    throw new Error(error.message.includes("AI") ? error.message : `Analysis Error: ${error.message}`);
   }
 };
 
 exports.chat = async (message, history) => {
-  const parts = history.map((m) => ({
-    text: `${m.role === "assistant" ? "AI Coach" : "User"}: ${m.content}`
-  }));
-  parts.unshift({ text: "You are an expert AI Career Coach for software developers. Provide actionable, professional advice. Keep answers concise and markdown-formatted." });
-  parts.push({ text: `User message: ${message}` });
+  const parts = history.map((m) => ({ text: `${m.role === "assistant" ? "Coach" : "User"}: ${m.content}` }));
+  parts.unshift({ text: "Expert AI Career Coach. Professional, actionable advice. Markdown allowed." });
+  parts.push({ text: `Message: ${message}` });
 
   try {
     return await generateWithFallback(parts, false);
   } catch (error) {
-    console.error("Gemini Chat Error:", error);
-    const errMsg = error.message || "Unknown AI error";
-    throw new Error(`AI Error: ${errMsg}`);
+    throw new Error(error.message.includes("AI") ? error.message : `Chat Error: ${error.message}`);
   }
 };
 
 exports.generateRoadmap = async (goal) => {
-  const prompt = `
-    Generate skill roadmap for becoming a "${goal}". Return ONLY JSON:
-    {
-      "goal": "${goal}", "summary": "1-2 sentence description", "estimatedWeeks": number,
-      "categories": [{ "name": "string", "icon": "Code2|Globe|Database|...", "color": "text-primary|...", "overallProgress": 0, "skills": [...] } (4 items)],
-      "timeline": [{ "week": "Week X-Y", "title": "string", "tasks": [string], "completed": false } (4-6 items)]
-    }
-    Icons: Code2, Globe, Database, Settings, Calculator, Presentation, BrainCircuit, Target, BookOpen, BarChart3, Zap. Colors: text-primary, text-secondary, text-accent, text-destructive.
-  `;
+  const prompt = `Skill roadmap for "${goal}". Return ONLY JSON:
+    { "goal": "${goal}", "summary": "string", "estimatedWeeks": number,
+      "categories": [{ "name": "string", "icon": "Code2|Globe|...", "color": "text-primary|...", "overallProgress": 0, "skills": [...] } (4 items)],
+      "timeline": [{ "week": "Week X-Y", "title": "string", "tasks": [string], "completed": false } (4-6 items)] }
+    Icons: Code2, Globe, Database, Settings, Calculator, Presentation, BrainCircuit, Target, BookOpen, BarChart3, Zap. Colors: text-primary, text-secondary, text-accent, text-destructive.`;
 
   try {
     return await generateWithFallback([{ text: prompt }], true);
   } catch (error) {
-    console.error("Gemini Roadmap Error:", error);
-    throw new Error("Failed to generate roadmap with Gemini AI.");
+    throw new Error(error.message.includes("AI") ? error.message : `Roadmap Error: ${error.message}`);
   }
 };
 
