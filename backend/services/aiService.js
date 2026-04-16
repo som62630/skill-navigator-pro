@@ -1,51 +1,69 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY, { apiVersion: "v1" });
-
-// Bulletproof model selection: Tries EVERY possible model name to find one that works on the user's account
+// Keep fallbacks fast to avoid long roadmap wait times.
 const MODEL_FALLBACKS = [
-  "gemini-1.5-flash", 
-  "gemini-1.5-pro",
-  "gemini-2.0-flash-exp",
-  "gemini-2.0-flash"
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
 ];
-const VERSION_FALLBACKS = ["v1", "v1beta"];
+const VERSION_FALLBACKS = ["v1"];
+const MAX_RETRIES = 1;
+const MAX_TOTAL_AI_TIME_MS = 15000;
+const MAX_429_WAIT_MS = 2500;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+function parseJsonFromText(rawText) {
+  const cleanedText = rawText.replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
+  try {
+    return JSON.parse(cleanedText);
+  } catch {
+    const objectMatch = cleanedText.match(/\{[\s\S]*\}/);
+    if (!objectMatch) {
+      throw new Error("AI returned non-JSON response.");
+    }
+    return JSON.parse(objectMatch[0]);
+  }
+}
+
 async function generateWithFallback(parts, isJson = true) {
   let lastError = null;
+  const startedAt = Date.now();
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Missing GEMINI_API_KEY on backend.");
+  }
   
   for (const modelName of MODEL_FALLBACKS) {
     for (const apiVersion of VERSION_FALLBACKS) {
+      if (Date.now() - startedAt > MAX_TOTAL_AI_TIME_MS) {
+        throw new Error("AI request timed out. Please try again.");
+      }
+
       let retryCount = 0;
-      const MAX_RETRIES = 2;
 
       while (retryCount <= MAX_RETRIES) {
         try {
           console.log(`📡 Trying AI: ${modelName} (${apiVersion})... ${retryCount > 0 ? `(Retry ${retryCount})` : ''}`);
-          const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion });
+          const genAI = new GoogleGenerativeAI(apiKey, { apiVersion });
+          const model = genAI.getGenerativeModel({ model: modelName });
           
           const result = await model.generateContent({
             contents: [{ role: "user", parts }],
-            generationConfig: { temperature: 0.1 }
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: isJson ? 2800 : 1500,
+              responseMimeType: isJson ? "application/json" : "text/plain",
+            }
           });
           
-          const responseText = result.response.text();
+          const responseText = result?.response?.text?.();
           if (!responseText) throw new Error("Empty response from AI");
-
-          const cleanedText = responseText.replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
           
           if (isJson) {
-            try {
-              return JSON.parse(cleanedText);
-            } catch (jsonError) {
-              console.warn(`🧩 JSON Parse Error for ${modelName}:`, jsonError.message);
-              lastError = jsonError;
-              break; 
-            }
+            return parseJsonFromText(responseText);
           }
-          return cleanedText;
+          return responseText.trim();
         } catch (error) {
           lastError = error;
           const errText = error.message?.toLowerCase() || "";
@@ -57,7 +75,7 @@ async function generateWithFallback(parts, isJson = true) {
             const suggestedWait = waitMatch ? parseFloat(waitMatch[1]) * 1000 : null;
             
             if (retryCount < MAX_RETRIES) {
-              const waitTime = suggestedWait ? Math.min(suggestedWait + 1000, 30000) : (retryCount + 1) * 5000;
+              const waitTime = suggestedWait ? Math.min(suggestedWait, MAX_429_WAIT_MS) : 1200;
               console.warn(`⏳ Quota exceeded. Waiting ${waitTime/1000}s based on API feedback...`);
               await sleep(waitTime);
               retryCount++;
@@ -131,11 +149,47 @@ exports.chat = async (message, history) => {
 };
 
 exports.generateRoadmap = async (goal) => {
-  const prompt = `Skill roadmap for "${goal}". Return ONLY JSON:
-    { "goal": "${goal}", "summary": "string", "estimatedWeeks": number,
-      "categories": [{ "name": "string", "icon": "Code2|Globe|...", "color": "text-primary|...", "overallProgress": 0, "skills": [...] } (4 items)],
-      "timeline": [{ "week": "Week X-Y", "title": "string", "tasks": [string], "completed": false } (4-6 items)] }
-    Icons: Code2, Globe, Database, Settings, Calculator, Presentation, BrainCircuit, Target, BookOpen, BarChart3, Zap. Colors: text-primary, text-secondary, text-accent, text-destructive.`;
+  const prompt = `Create a professional, highly detailed career roadmap for someone wanting to become: "${goal}".
+    
+    Return ONLY a valid JSON object with this EXACT structure:
+    {
+      "goal": "${goal}",
+      "summary": "A 2-3 sentence strategic overview of this career path.",
+      "estimatedWeeks": 12,
+      "categories": [
+        {
+          "name": "Category Name (e.g., Frontend Fundamentals)",
+          "icon": "Code2|Globe|Database|Settings|Calculator|Presentation|BrainCircuit|Target|BookOpen|BarChart3|Zap",
+          "color": "text-primary|text-secondary|text-accent|text-destructive",
+          "overallProgress": 0,
+          "skills": [
+            {
+              "name": "Skill Name",
+              "description": "Short explanation of what to learn",
+              "difficulty": "Beginner|Intermediate|Advanced",
+              "estimatedHours": 10,
+              "progress": 0,
+              "resources": ["Specific Course Name", "Documentation Link", "YouTube Channel"]
+            }
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "week": "Week 1-2",
+          "title": "Phase Title",
+          "tasks": ["Task 1", "Task 2", "Task 3"],
+          "completed": false
+        }
+      ]
+    }
+
+    Guidelines:
+    1. Create 4-5 core categories.
+    2. Each category should have 3-5 specific skills.
+    3. Timeline should cover 8-16 weeks.
+    4. Icons must be from the allowed list: Code2, Globe, Database, Settings, Calculator, Presentation, BrainCircuit, Target, BookOpen, BarChart3, Zap.
+    5. Colors must be from the allowed list: text-primary, text-secondary, text-accent, text-destructive.`;
 
   try {
     return await generateWithFallback([{ text: prompt }], true);

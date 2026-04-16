@@ -176,37 +176,81 @@ function findMockKey(goal: string): string {
 }
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API_TIMEOUT_MS = 18000;
+
+function shouldSkipRemoteRoadmapApi() {
+  if (typeof window === "undefined") return false;
+  const isProdHost = !["localhost", "127.0.0.1"].includes(window.location.hostname);
+  const apiPointsToLocalhost = API_URL.includes("localhost") || API_URL.includes("127.0.0.1");
+  return isProdHost && apiPointsToLocalhost;
+}
 
 /**
  * Generate a skill roadmap for a given career goal.
  * Connects to the real backend API.
  */
 export async function generateRoadmap(goal: string, token?: string): Promise<RoadmapData> {
+  if (shouldSkipRemoteRoadmapApi()) {
+    console.warn("Roadmap API points to localhost on a production host. Using mock fallback.");
+    return simulateMockRoadmap(goal);
+  }
+
   if (!token) {
     console.warn("No auth token provided to generateRoadmap. Falling back to mock data.");
     return simulateMockRoadmap(goal);
   }
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
+    const controller = new AbortController();
+    timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
     const response = await fetch(`${API_URL}/roadmap/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
       },
+      signal: controller.signal,
       body: JSON.stringify({ goal }),
     });
-
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Failed to generate roadmap");
 
-    return data;
+    // Clean and validate the data before returning
+    const cleanedData: RoadmapData = {
+      goal: data.goal || goal,
+      summary: data.summary || `A roadmap to help you achieve your goal of becoming a ${goal}.`,
+      estimatedWeeks: data.estimatedWeeks || 12,
+      generatedAt: data.generatedAt || new Date().toISOString(),
+      categories: (data.categories || []).map((cat: any) => ({
+        name: cat.name || "General Skills",
+        icon: cat.icon || "Code2",
+        color: cat.color || "text-primary",
+        overallProgress: cat.overallProgress || 0,
+        skills: (cat.skills || []).map((skill: any) => ({
+          name: typeof skill === 'string' ? skill : (skill.name || "Unnamed Skill"),
+          description: skill.description || "Skill details including key concepts and learning objectives.",
+          difficulty: skill.difficulty || "Intermediate",
+          estimatedHours: skill.estimatedHours || 5,
+          progress: skill.progress || 0,
+          resources: skill.resources || []
+        }))
+      })),
+      timeline: (data.timeline || []).map((time: any) => ({
+        week: time.week || "Week X",
+        title: time.title || "Learning Phase",
+        tasks: time.tasks || [],
+        completed: time.completed || false
+      }))
+    };
+
+    return cleanedData;
   } catch (error) {
     console.error("Roadmap Generation Error:", error);
-    if (import.meta.env.DEV) {
-      console.info("Falling back to mock data in development mode.");
-      return simulateMockRoadmap(goal);
-    }
-    throw error;
+    console.info("Falling back to mock roadmap after API failure.");
+    return simulateMockRoadmap(goal);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 }
 
@@ -232,8 +276,8 @@ export async function saveRoadmap(roadmap: RoadmapData, token: string): Promise<
 }
 
 async function simulateMockRoadmap(goal: string): Promise<RoadmapData> {
-  // Simulate AI thinking delay
-  await new Promise((r) => setTimeout(r, 1800 + Math.random() * 1200));
+  // Keep fallback snappy so users are never blocked.
+  await new Promise((r) => setTimeout(r, 450 + Math.random() * 350));
 
   const key = findMockKey(goal);
   const data = mockRoadmaps[key]?.() ?? mockRoadmaps.default();

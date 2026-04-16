@@ -286,8 +286,8 @@ const Roadmap = () => {
     try {
       const data = await generateRoadmap(g, token || undefined);
       setRoadmap(data);
-    } catch {
-      // Error handling
+    } catch (error: any) {
+      toast.error(error?.message || "Unable to generate roadmap right now.");
     } finally {
       setLoading(false);
     }
