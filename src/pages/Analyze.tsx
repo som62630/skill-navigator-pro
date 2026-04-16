@@ -77,9 +77,11 @@ const Analyze = () => {
     e.preventDefault();
     setDragOver(false);
     const f = e.dataTransfer.files[0];
-    if (f && (f.type === "application/pdf" || f.name.endsWith(".doc") || f.name.endsWith(".docx"))) {
+    if (f && f.type === "application/pdf") {
       setForm((p) => ({ ...p, file: f }));
       setErrors((p) => ({ ...p, file: "" }));
+    } else {
+      setErrors((p) => ({ ...p, file: "Please upload a PDF resume." }));
     }
   };
 
@@ -158,7 +160,7 @@ const Analyze = () => {
 
             {/* File Upload */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Resume (PDF / DOC)</label>
+              <label className="text-sm font-medium">Resume (PDF)</label>
               <div
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
@@ -171,11 +173,16 @@ const Analyze = () => {
                 <input
                   id="file-input"
                   type="file"
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf,application/pdf"
                   className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
-                    if (f) { setForm((p) => ({ ...p, file: f })); setErrors((p) => ({ ...p, file: "" })); }
+                    if (f?.type === "application/pdf") {
+                      setForm((p) => ({ ...p, file: f }));
+                      setErrors((p) => ({ ...p, file: "" }));
+                    } else {
+                      setErrors((p) => ({ ...p, file: "Please upload a PDF resume." }));
+                    }
                   }}
                 />
                 {form.file ? (
@@ -188,7 +195,7 @@ const Analyze = () => {
                   <div className="flex flex-col items-center gap-2">
                     <Upload className="text-muted-foreground" size={32} />
                     <p className="text-sm text-muted-foreground">Drag & drop your resume or click to browse</p>
-                    <p className="text-xs text-muted-foreground">PDF, DOC, DOCX up to 10MB</p>
+                    <p className="text-xs text-muted-foreground">PDF up to 10MB</p>
                   </div>
                 )}
               </div>

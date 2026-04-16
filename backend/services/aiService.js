@@ -117,21 +117,12 @@ exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
       "projects": [{ "title": "string", "desc": "string", "difficulty": "Beginner|Intermediate|Advanced" } (3 items)] }`;
 
   let parts = [];
-  if (mimeType === "application/pdf") {
-    parts.push({ inlineData: { data: resumeBuffer.toString("base64"), mimeType: "application/pdf" } });
-  } else {
-    parts.push({ text: "Resume:\n" + resumeBuffer.toString("utf-8") });
-  }
+  parts.push({ text: "Resume:\n" + resumeBuffer.toString("utf-8") });
   parts.push({ text: prompt });
 
   try {
     return await generateWithFallback(parts, true);
   } catch (error) {
-    if (mimeType === "application/pdf") {
-      try {
-        return await generateWithFallback([{ text: "Resume:\n" + resumeBuffer.toString("utf-8") }, { text: prompt }], true);
-      } catch (fError) { /* ignore fallback error and throw primary */ }
-    }
     throw new Error(error.message.includes("AI") ? error.message : `Analysis Error: ${error.message}`);
   }
 };

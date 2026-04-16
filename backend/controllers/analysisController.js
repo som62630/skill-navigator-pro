@@ -8,7 +8,35 @@ exports.analyzeResume = async (req, res) => {
     const { name, role, level } = req.body;
     if (!req.file) return res.status(400).json({ message: "No file uploaded." });
 
-    const analysisResults = await aiService.analyzeResume(req.file.buffer, req.file.mimetype, role, level);
+    const fileMimeType = req.file.mimetype || "";
+    let resumeBufferForAi = req.file.buffer;
+    let mimeTypeForAi = fileMimeType;
+
+    if (fileMimeType === "application/pdf") {
+      const parsedPdf = await pdf(req.file.buffer);
+      const extractedText = (parsedPdf?.text || "").replace(/\s+/g, " ").trim();
+      if (!extractedText || extractedText.length < 60) {
+        return res.status(400).json({
+          message: "Could not extract readable text from this PDF. Please upload a text-based PDF (not image-scanned)."
+        });
+      }
+      resumeBufferForAi = Buffer.from(extractedText, "utf-8");
+      mimeTypeForAi = "text/plain";
+    } else if (
+      fileMimeType === "application/msword" ||
+      fileMimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ) {
+      return res.status(400).json({
+        message: "DOC/DOCX parsing is not enabled yet. Please upload your resume as a text-based PDF."
+      });
+    }
+
+    const analysisResults = await aiService.analyzeResume(
+      resumeBufferForAi,
+      mimeTypeForAi,
+      role,
+      level
+    );
 
     if (!analysisResults) return res.status(400).json({ message: "Could not analyze resume." });
 
