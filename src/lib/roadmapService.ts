@@ -175,14 +175,19 @@ function findMockKey(goal: string): string {
   return "default";
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const ENV_API_URL = import.meta.env.VITE_API_URL;
 const API_TIMEOUT_MS = 18000;
+const ALLOW_MOCK_ROADMAP = import.meta.env.VITE_ALLOW_MOCK_ROADMAP === "true";
 
-function shouldSkipRemoteRoadmapApi() {
-  if (typeof window === "undefined") return false;
-  const isProdHost = !["localhost", "127.0.0.1"].includes(window.location.hostname);
-  const apiPointsToLocalhost = API_URL.includes("localhost") || API_URL.includes("127.0.0.1");
-  return isProdHost && apiPointsToLocalhost;
+function getApiUrl() {
+  if (ENV_API_URL) return ENV_API_URL;
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://localhost:5001";
+    }
+  }
+  throw new Error("Roadmap API is not configured. Set VITE_API_URL to your deployed backend URL.");
 }
 
 /**
@@ -190,14 +195,10 @@ function shouldSkipRemoteRoadmapApi() {
  * Connects to the real backend API.
  */
 export async function generateRoadmap(goal: string, token?: string): Promise<RoadmapData> {
-  if (shouldSkipRemoteRoadmapApi()) {
-    console.warn("Roadmap API points to localhost on a production host. Using mock fallback.");
-    return simulateMockRoadmap(goal);
-  }
+  const API_URL = getApiUrl();
 
   if (!token) {
-    console.warn("No auth token provided to generateRoadmap. Falling back to mock data.");
-    return simulateMockRoadmap(goal);
+    throw new Error("Please log in to generate your roadmap.");
   }
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -247,14 +248,18 @@ export async function generateRoadmap(goal: string, token?: string): Promise<Roa
     return cleanedData;
   } catch (error) {
     console.error("Roadmap Generation Error:", error);
-    console.info("Falling back to mock roadmap after API failure.");
-    return simulateMockRoadmap(goal);
+    if (ALLOW_MOCK_ROADMAP) {
+      console.info("Using mock roadmap fallback because VITE_ALLOW_MOCK_ROADMAP=true.");
+      return simulateMockRoadmap(goal);
+    }
+    throw error instanceof Error ? error : new Error("Unable to generate roadmap right now.");
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }
 }
 
 export async function saveRoadmap(roadmap: RoadmapData, token: string): Promise<any> {
+  const API_URL = getApiUrl();
   try {
     const response = await fetch(`${API_URL}/roadmap/save`, {
       method: "POST",

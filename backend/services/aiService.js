@@ -1,12 +1,9 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-
-// Keep fallbacks fast to avoid long roadmap wait times.
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL_FALLBACKS = [
-  "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
+  "openai/gpt-4o-mini",
+  "google/gemini-2.0-flash-001",
+  "meta-llama/llama-3.1-70b-instruct",
 ];
-const VERSION_FALLBACKS = ["v1"];
 const MAX_RETRIES = 1;
 const MAX_TOTAL_AI_TIME_MS = 15000;
 const MAX_429_WAIT_MS = 2500;
@@ -29,80 +26,91 @@ function parseJsonFromText(rawText) {
 async function generateWithFallback(parts, isJson = true) {
   let lastError = null;
   const startedAt = Date.now();
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("Missing GEMINI_API_KEY on backend.");
+    throw new Error("Missing OpenRouter key on backend. Set OPENROUTER_API_KEY (preferred) or API_KEY.");
   }
-  
+
+  const prompt = parts.map((p) => p.text || "").join("\n\n");
+
   for (const modelName of MODEL_FALLBACKS) {
-    for (const apiVersion of VERSION_FALLBACKS) {
-      if (Date.now() - startedAt > MAX_TOTAL_AI_TIME_MS) {
-        throw new Error("AI request timed out. Please try again.");
-      }
+    if (Date.now() - startedAt > MAX_TOTAL_AI_TIME_MS) {
+      throw new Error("AI request timed out. Please try again.");
+    }
 
-      let retryCount = 0;
+    let retryCount = 0;
+    while (retryCount <= MAX_RETRIES) {
+      try {
+        console.log(`📡 Trying AI via OpenRouter: ${modelName}${retryCount > 0 ? ` (Retry ${retryCount})` : ""}`);
+        const response = await fetch(OPENROUTER_API_URL, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": process.env.APP_URL || "http://localhost:5001",
+            "X-Title": "Skill Navigator Pro",
+          },
+          body: JSON.stringify({
+            model: modelName,
+            messages: [
+              {
+                role: "user",
+                content: prompt,
+              }
+            ],
+            temperature: 0.1,
+            max_tokens: isJson ? 2800 : 1500,
+            response_format: isJson ? { type: "json_object" } : undefined,
+          }),
+        });
 
-      while (retryCount <= MAX_RETRIES) {
-        try {
-          console.log(`📡 Trying AI: ${modelName} (${apiVersion})... ${retryCount > 0 ? `(Retry ${retryCount})` : ''}`);
-          const genAI = new GoogleGenerativeAI(apiKey, { apiVersion });
-          const model = genAI.getGenerativeModel({ model: modelName });
-          
-          const result = await model.generateContent({
-            contents: [{ role: "user", parts }],
-            generationConfig: {
-              temperature: 0.1,
-              maxOutputTokens: isJson ? 2800 : 1500,
-              responseMimeType: isJson ? "application/json" : "text/plain",
-            }
-          });
-          
-          const responseText = result?.response?.text?.();
-          if (!responseText) throw new Error("Empty response from AI");
-          
-          if (isJson) {
-            return parseJsonFromText(responseText);
-          }
-          return responseText.trim();
-        } catch (error) {
-          lastError = error;
-          const errText = error.message?.toLowerCase() || "";
-          
-          // Smart 429 Handling: Parse suggested wait time
-          if (errText.includes("429") || errText.includes("quota") || errText.includes("too many requests")) {
-            // Extract "retry in X.Xs" or similar patterns
-            const waitMatch = error.message.match(/retry in (\d+\.?\d*)s/i);
-            const suggestedWait = waitMatch ? parseFloat(waitMatch[1]) * 1000 : null;
-            
-            if (retryCount < MAX_RETRIES) {
-              const waitTime = suggestedWait ? Math.min(suggestedWait, MAX_429_WAIT_MS) : 1200;
-              console.warn(`⏳ Quota exceeded. Waiting ${waitTime/1000}s based on API feedback...`);
-              await sleep(waitTime);
-              retryCount++;
-              continue;
-            }
-            
-            // If all retries fail, throw a clean quota message
-            throw new Error("AI is currently busy due to high demand. Please try again in 1-2 minutes.");
-          }
-
-          const isRetryable = 
-            errText.includes("400") || 
-            errText.includes("404") || 
-            errText.includes("500") ||
-            errText.includes("503") ||
-            errText.includes("not found") || 
-            errText.includes("unavailable") ||
-            errText.includes("fetch") ||
-            errText.includes("model");
-
-          if (isRetryable) {
-            console.warn(`⚠️ Fallback triggered for ${modelName} (${apiVersion}): ${errText.substring(0, 50)}...`);
-            break;
-          }
-          
-          throw error;
+        const data = await response.json();
+        if (!response.ok) {
+          const apiError = data?.error?.message || data?.message || `HTTP ${response.status}`;
+          throw new Error(apiError);
         }
+
+        const responseText = data?.choices?.[0]?.message?.content;
+        if (!responseText) throw new Error("Empty response from AI");
+
+        if (isJson) {
+          return parseJsonFromText(responseText);
+        }
+        return String(responseText).trim();
+      } catch (error) {
+        lastError = error;
+        const errText = error.message?.toLowerCase() || "";
+
+        if (errText.includes("429") || errText.includes("quota") || errText.includes("too many requests") || errText.includes("rate limit")) {
+          const waitMatch = error.message.match(/retry in (\d+\.?\d*)s/i);
+          const suggestedWait = waitMatch ? parseFloat(waitMatch[1]) * 1000 : null;
+
+          if (retryCount < MAX_RETRIES) {
+            const waitTime = suggestedWait ? Math.min(suggestedWait, MAX_429_WAIT_MS) : 1200;
+            console.warn(`⏳ Rate limit hit. Waiting ${waitTime / 1000}s...`);
+            await sleep(waitTime);
+            retryCount++;
+            continue;
+          }
+          throw new Error("AI is currently busy due to high demand. Please try again in 1-2 minutes.");
+        }
+
+        const isRetryable =
+          errText.includes("400") ||
+          errText.includes("404") ||
+          errText.includes("500") ||
+          errText.includes("503") ||
+          errText.includes("timeout") ||
+          errText.includes("network") ||
+          errText.includes("fetch") ||
+          errText.includes("model");
+
+        if (isRetryable) {
+          console.warn(`⚠️ Fallback triggered for ${modelName}: ${errText.substring(0, 80)}...`);
+          break;
+        }
+
+        throw error;
       }
     }
   }
@@ -128,9 +136,14 @@ exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
 };
 
 exports.chat = async (message, history) => {
-  const parts = history.map((m) => ({ text: `${m.role === "assistant" ? "Coach" : "User"}: ${m.content}` }));
-  parts.unshift({ text: "Expert AI Career Coach. Professional, actionable advice. Markdown allowed." });
-  parts.push({ text: `Message: ${message}` });
+  const historyText = history
+    .map((m) => `${m.role === "assistant" ? "Coach" : "User"}: ${m.content}`)
+    .join("\n");
+  const parts = [
+    { text: "Expert AI Career Coach. Professional, actionable advice. Markdown allowed." },
+    { text: historyText ? `Conversation so far:\n${historyText}` : "No prior conversation." },
+    { text: `Message: ${message}` },
+  ];
 
   try {
     return await generateWithFallback(parts, false);

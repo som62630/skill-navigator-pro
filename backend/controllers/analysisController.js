@@ -1,7 +1,19 @@
 const Analysis = require('../models/Analysis');
 const aiService = require('../services/aiService');
 const pdfParse = require('pdf-parse');
-const pdf = typeof pdfParse === 'function' ? pdfParse : (pdfParse.default || pdfParse);
+
+function getPdfParser() {
+  if (typeof pdfParse === "function") return pdfParse;
+  if (pdfParse && typeof pdfParse.default === "function") return pdfParse.default;
+  if (pdfParse && typeof pdfParse.pdf === "function") return pdfParse.pdf;
+  if (pdfParse && typeof pdfParse.PDFParse === "function") {
+    return async (buffer) => {
+      const parser = new pdfParse.PDFParse({ data: buffer });
+      return parser.getText({ mergePages: true });
+    };
+  }
+  throw new Error("PDF parser is not available on this server build.");
+}
 
 exports.analyzeResume = async (req, res) => {
   try {
@@ -13,6 +25,7 @@ exports.analyzeResume = async (req, res) => {
     let mimeTypeForAi = fileMimeType;
 
     if (fileMimeType === "application/pdf") {
+      const pdf = getPdfParser();
       const parsedPdf = await pdf(req.file.buffer);
       const extractedText = (parsedPdf?.text || "").replace(/\s+/g, " ").trim();
       if (!extractedText || extractedText.length < 60) {
