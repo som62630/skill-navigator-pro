@@ -118,11 +118,18 @@ async function generateWithFallback(parts, isJson = true) {
 }
 
 exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
-  // Compression: Using extremely concise prompt to save tokens
-  const prompt = `Analyze resume for ${level} ${role}. Return ONLY JSON:
-    { "score": 0-100, "strengths": [string], "weaknesses": [string], "missing": [string], "suggested": [string],
-      "roadmap": [{ "week": "Week 1-2", "title": "string", "tasks": [string] }, ... (4 items)],
-      "projects": [{ "title": "string", "desc": "string", "difficulty": "Beginner|Intermediate|Advanced" } (3 items)] }`;
+  const prompt = `You are an expert technical recruiter analyzing a resume for a ${level} ${role} role. Provide highly precise, critical, and specific feedback based ONLY on the resume content. 
+  
+  CRITICAL INSTRUCTION FOR SCORE: Calculate a strict readiness "score" (0-100) reflecting how well the resume comprehensively matches the target role. DO NOT default to 85. 0-50 = poor fit, 50-70 = average, 70-85 = good, 85-100 = excellent. Vary the score accurately based on actual resume quality.
+
+  Return ONLY JSON:
+    { "score": <number 0-100, calculated carefully>,
+      "strengths": [<array of 4-5 precise strengths found>],
+      "weaknesses": [<array of 4-5 precise weaknesses found>],
+      "missing": [<array of 4-5 specific missing skills/tools>],
+      "suggested": [<array of 4-5 actionable suggestions>],
+      "roadmap": [{ "week": "Week 1-2", "title": "string", "tasks": ["specific task 1", "specific task 2", "specific task 3"] }, ... (4 items)],
+      "projects": [{ "title": "string", "desc": "specific and detailed description", "difficulty": "Beginner|Intermediate|Advanced" } (3 items)] }`;
 
   let parts = [];
   parts.push({ text: "Resume:\n" + resumeBuffer.toString("utf-8") });
