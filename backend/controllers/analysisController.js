@@ -27,8 +27,14 @@ exports.analyzeResume = async (req, res) => {
     if (fileMimeType === "application/pdf") {
       const pdf = getPdfParser();
       const parsedPdf = await pdf(req.file.buffer);
-      const extractedText = (parsedPdf?.text || "").replace(/\s+/g, " ").trim();
-      if (!extractedText || extractedText.length < 60) {
+      const rawExtractedText =
+        (typeof parsedPdf === "string" && parsedPdf) ||
+        parsedPdf?.text ||
+        parsedPdf?.fullText ||
+        parsedPdf?.content ||
+        "";
+      const extractedText = String(rawExtractedText).replace(/\s+/g, " ").trim();
+      if (!extractedText || extractedText.length < 25) {
         return res.status(400).json({
           message: "Could not extract readable text from this PDF. Please upload a text-based PDF (not image-scanned)."
         });
