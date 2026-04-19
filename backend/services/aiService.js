@@ -118,18 +118,23 @@ async function generateWithFallback(parts, isJson = true) {
 }
 
 exports.analyzeResume = async (resumeBuffer, mimeType, role, level) => {
-  const prompt = `You are an expert technical recruiter analyzing a resume for a ${level} ${role} role. Provide highly precise, critical, and specific feedback based ONLY on the resume content. 
-  
-  CRITICAL INSTRUCTION FOR SCORE: Calculate a strict readiness "score" (0-100) reflecting how well the resume comprehensively matches the target role. DO NOT default to 85. 0-50 = poor fit, 50-70 = average, 70-85 = good, 85-100 = excellent. Vary the score accurately based on actual resume quality.
+  const prompt = `You are an expert technical recruiter analyzing a resume for a ${level} ${role}.
 
-  Return ONLY JSON:
-    { "score": <number 0-100, calculated carefully>,
-      "strengths": [<array of 4-5 precise strengths found>],
-      "weaknesses": [<array of 4-5 precise weaknesses found>],
-      "missing": [<array of 4-5 specific missing skills/tools>],
-      "suggested": [<array of 4-5 actionable suggestions>],
+  CRITICAL SCORE INSTRUCTION: You MUST calculate the true readiness "score" using this strict 100-point rubric:
+  - 40 points: Core skills exactly match the chosen role. Deduct points for missing skills.
+  - 30 points: Experience and past work demonstrate relevance to this specific role.
+  - 20 points: Tools, frameworks, and technologies match expected industry standards.
+  - 10 points: Overall impact, metrics, and clarity.
+  Be extremely strict. Most average candidates should score around 40-70. Do not give an 85 unless the candidate is flawless and senior-level.
+
+  Return ONLY valid JSON:
+    { "score": <final integer between 0-100 based strictly on the rubric>,
+      "strengths": [<array of 4-5 precise, non-generic strengths found>],
+      "weaknesses": [<array of 4-5 precise, critical weaknesses or gaps>],
+      "missing": [<array of 4-5 specific missing skills or tools>],
+      "suggested": [<array of 4-5 actionable, high-impact suggestions>],
       "roadmap": [{ "week": "Week 1-2", "title": "string", "tasks": ["specific task 1", "specific task 2", "specific task 3"] }, ... (4 items)],
-      "projects": [{ "title": "string", "desc": "specific and detailed description", "difficulty": "Beginner|Intermediate|Advanced" } (3 items)] }`;
+      "projects": [{ "title": "string", "desc": "detailed specific description to fill gaps", "difficulty": "Beginner|Intermediate|Advanced" } (3 items)] }`;
 
   let parts = [];
   parts.push({ text: "Resume:\n" + resumeBuffer.toString("utf-8") });
