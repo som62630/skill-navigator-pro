@@ -176,7 +176,7 @@ function findMockKey(goal: string): string {
 }
 
 const ENV_API_URL = import.meta.env.VITE_API_URL;
-const API_TIMEOUT_MS = 18000;
+const API_TIMEOUT_MS = 60000;
 const ALLOW_MOCK_ROADMAP = import.meta.env.VITE_ALLOW_MOCK_ROADMAP === "true";
 
 function getApiUrl() {
@@ -203,7 +203,7 @@ export async function generateRoadmap(goal: string, token?: string): Promise<Roa
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
     const controller = new AbortController();
-    timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+    timeoutId = setTimeout(() => controller.abort(new Error("Request timed out. The AI took too long to generate the roadmap.")), API_TIMEOUT_MS);
 
     const response = await fetch(`${API_URL}/roadmap/generate`, {
       method: "POST",

@@ -5,7 +5,7 @@ const MODEL_FALLBACKS = [
   "meta-llama/llama-3.1-70b-instruct",
 ];
 const MAX_RETRIES = 1;
-const MAX_TOTAL_AI_TIME_MS = 15000;
+const MAX_TOTAL_AI_TIME_MS = 50000;
 const MAX_429_WAIT_MS = 2500;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -40,10 +40,14 @@ async function generateWithFallback(parts, isJson = true) {
 
     let retryCount = 0;
     while (retryCount <= MAX_RETRIES) {
+      let fetchTimeout;
       try {
         console.log(`📡 Trying AI via OpenRouter: ${modelName}${retryCount > 0 ? ` (Retry ${retryCount})` : ""}`);
+        const controller = new AbortController();
+        fetchTimeout = setTimeout(() => controller.abort(), 45000);
         const response = await fetch(OPENROUTER_API_URL, {
           method: "POST",
+          signal: controller.signal,
           headers: {
             "Authorization": `Bearer ${apiKey}`,
             "Content-Type": "application/json",
@@ -63,6 +67,7 @@ async function generateWithFallback(parts, isJson = true) {
             response_format: isJson ? { type: "json_object" } : undefined,
           }),
         });
+        clearTimeout(fetchTimeout);
 
         const data = await response.json();
         if (!response.ok) {
@@ -78,6 +83,7 @@ async function generateWithFallback(parts, isJson = true) {
         }
         return String(responseText).trim();
       } catch (error) {
+        if (fetchTimeout) clearTimeout(fetchTimeout);
         lastError = error;
         const errText = error.message?.toLowerCase() || "";
 
